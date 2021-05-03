@@ -1,0 +1,13 @@
+method,case,N
+All,All_devices,1
+mean,50%_devices,0.5
+mean,25%_devices,0.25
+mean,12.5%_devices,0.125
+mean,6.25%_devices,0.0625
+mean,10%_devices,0.1
+cluster,5_cluster,5
+cluster,10_cluster,10
+cluster,15_cluster,15
+cluster,20_cluster,20
+cluster,3_cluster,3
+cluster,4_cluster,4

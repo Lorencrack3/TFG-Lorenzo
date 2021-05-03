@@ -1,0 +1,64 @@
+Package: deduplication
+Type: Package
+Title: R package for deduplication (to be more explicit)
+Version: 0.1.2
+Author: Bogdan Oancea <bogdan.oancea@gmail.com>, David Salgado <david.salgado.fernandez@ine.es>, Sandra Barragan <sandra.barragan.andres@ine.es>
+Maintainer: Bogdan Oancea <bogdan.oancea@gmail.com>
+Description: R package for deduplication (to be described)
+License: GPL3, EUPL
+Imports: data.table,
+         destim,
+         Matrix,
+         doParallel,
+         parallel,
+         rgeos,
+         stringr,
+         xml2,
+         Rsolnp
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Collate: 
+    'antennaNeighbours.R'
+    'aprioriDuplicityProb.R'
+    'aprioriOneDevice.R'
+    'buildCentroidProbs.R'
+    'buildCentroids.R'
+    'buildCluster.R'
+    'buildDeltaProb.R'
+    'buildDeltaProb2.R'
+    'buildDuplicityTable1to1.R'
+    'buildDuplicityTablePairs.R'
+    'centerOfProbabilities.R'
+    'checkConnections_step1.R'
+    'tileEquivalence.R'
+    'distance_coverArea.R'
+    'checkConnections_step2.R'
+    'computeDuplicity.R'
+    'computeDuplicityBayesian.R'
+    'dispersionRadius.R'
+    'readPostLocProb.R'
+    'computeDuplicityTrajectory.R'
+    'computePairs.R'
+    'deduplication.R'
+    'example1.R'
+    'example2.R'
+    'example3.R'
+    'fitModels.R'
+    'getDeviceIDs.R'
+    'getConnections.R'
+    'getEmissionProbs.R'
+    'getEmissionProbsJointModel.R'
+    'getGenericModel.R'
+    'getJointModel.R'
+    'modeDelta.R'
+    'readCells.R'
+    'readEvents.R'
+    'readGridParams.R'
+    'readPostLocJointProb.R'
+    'readSimulationParams.R'
+    'splitReverse.R'

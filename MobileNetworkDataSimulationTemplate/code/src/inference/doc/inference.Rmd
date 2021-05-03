@@ -1,0 +1,650 @@
+---
+title: "Introduction to inference package"
+author: "Bogdan Oancea"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to inference package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib  
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+# Introduction
+
+
+This package focuses on the computation of the probability distribution for the number of individuals in the target population conditioned on the number of individuals detected by the network and some auxiliary information which is absolutely necessary to provide a meaningful inference on the target population.  This auxiliary information will be basically telecommunication market information in the form of penetration rates (ratio of number of devices to number of individuals in the target population) and register-based population data. This information will provide the necessary link between the number of individuals at the network level and at the target population level. Register-based population figures offer information about society from a concrete demographic perspective (residential population) with a given degree of spatial and time breakdown while mobile network data provides the opportunity to reach unprecedented spatial and time scales as well as a complementary view on the population (present population). We propose to use hierarchical models (i) to produce probability distributions, (ii) to integrate data sources, and (iii) to account for the uncertainty and the differences of concepts and scales.
+
+We use a two-staged modelling approach. Firstly, we assume that there exists an initial time instant $t_{0}$ in which both the register-based target population and the actual population can be assimilated in terms of their physical location. This assumption will trigger the first stage in which we compute a probability distribution for the number of individuals $\textbf{N}_{t_{0}}$ of the target population in all regions in terms of the number of individuals $\mathbf{N}_{0}^{\textrm{net}}$ detected by the network and the auxiliary information. Secondly, we assume that individuals displace over the geographical territory independently of the MNO. This assumption will trigger the second stage in which we provide a probability distribution for the number of individuals $\mathbf{N}_{t}$ for later times $t> t_{0}$.
+A detailed description of the methodological approach can be found in @WP5Deliverable1.3 and in @bmc_paper.
+
+# Population at the initial time $t_0$
+
+## Methodological aspects
+In this section we drop the time index for the easy of notation. The auxiliary information is provided by the penetration rates $P_{r}^{\textrm{net}}$ of the MNO and the register-based population $N_{r}^{\textrm{reg}}$ at each region $r$. We combine $N_{r}^{\textrm{net}}$, $P_{r}$, and $N_{r}^{\textrm{reg}}$ to produce the probability distribution for $\mathbf{N}=(N_{1},\dots,N_{R})^{T}$ following the multilevel approach used in the species abundance problem in ecology @ecology. This approach clearly distinguishes between the state and the observation process. The state process is the underlying dynamical process of the population and the observation process is the procedure by which we get information about the location and timestamp of each individual in the target population. 
+
+
+The first level makes use of the detection probability $p_{r}$ for each region $r$. We model
+
+$$
+N_{r}^{\textrm{net}}\simeq\textrm{Binomial}\left(N_{r}, p_{r}\right).
+$$
+making the assumption that the probability of detection $p_r$ for all individuals in region $r$ is the same and we approximate it with the penetration rate $P_r$ of the MNO in region $r$. 
+The posterior probability distribution for $N_{r}$ in terms of $N^{\textrm{net}}_{r}$ will be given by
+
+$$
+\mathbb{P}\left(N_{r}|N_{r}^{\textrm{net}}\right)=\left\{\begin{array}{ll}
+0 & \textrm{ if } N_{r} < N_{r}^{\textrm{net}},\\
+\textrm{negbin}\left(N_{r} - N_{r}^{\textrm{net}};1 - p_{r}, N_{r}^{\textrm{net}}+1\right) & \textrm{ if } N_{r} \geq N_{r}^{\textrm{net}},
+\end{array}\right.
+$$
+
+\noindent where $\textrm{negbin}\left(k; p, r\right)\equiv\binom{k+r-1}{k}p^{k}(1-p)^{r}$ denotes the probability mass function of a negative binomial random variable of values $k\geq 0$ with parameters $p$ and $r$. Once we have a distribution, we can provide a point estimators, a posterior variance, a posterior coefficient of variation, a credible interval, and as many indicators as possible computed from the distribution. In our implementation we compute the mean, mode and median as point estimators, the standard deviation, coefficient of variation the first and third quartile, the interquartile range and the credible intervals.
+
+
+We introduce now the second level and model the detection probability $p_{kr}$ per individual $k$ in the target population as $p_{kr}=p_r+noise$. We propose to implement this idea modeling $p_{r}\simeq\textrm{Beta}\left(\alpha_{r},\beta_{r}\right)$ and choosing the hyperparameters $\alpha_{r}$ and $\beta_{r}$ according to the penetration rates $P_{r}^{\textrm{net}}$ and the register-based population figures $N_{r}^{\textrm{reg}}$. The penetration rate is also subjectec to the problem of device deduplication. We define: 
+
+$$\Omega_{r}^{(1)}=\frac{\sum_{d=1}^{D}\bar{\gamma}_{dr}\cdot p_{d}^{(1)}}{\sum_{d=1}^{D}\bar{\gamma}_{dr}},\\
+\Omega_{r}^{(2)}=\frac{\sum_{d=1}^{D}\bar{\gamma}_{dr}\cdot p_{d}^{(2)}}{\sum_{d=1}^{D}\bar{\gamma}_{dr}}$$.
+
+with $p_{d}$ being the duplicity probabilities and  $\bar{\gamma}_{dr}$ the posterior location probabilities in region $r$ for device $d$. The deduplicated rate is defined as:
+
+
+$$\tilde{P}_{r}^{\textrm{net}}=\left(\Omega_{r}^{(1)} +\frac{\Omega_{r}^{(2)}}{2}\right)\cdot P_{r}^{\textrm{net}}$$.
+
+Denoting by  $N_{r}^{\textrm{reg}}$ the population of region $r$ according to an external population register, we fix
+
+$$\alpha_{r}+\beta_{r}  =  N_{r}^{\textrm{reg}},\\
+\frac{\alpha_{r}}{\alpha_{r} + \beta_{r}}  =  \tilde{P}_{r}^{\textrm{net}}$$
+
+We can now compute the posterior distribution for $N_r$:
+
+$$
+\mathbb{P}\left(N_{r}|N_{r}^{\textrm{net}}\right) = \left\{\begin{array}{ll}
+0 & \textrm{ if } N_{r} < N_{r}^{\textrm{net}},\\
+\mathrm{betaNegBin}\left(N_{r}-N_{r}^{\textrm{net}};N_{r}^{\textrm{net}} + 1, \alpha_{r} - 1, \beta_{r}\right) & \textrm{ if } N_{r} \geq N_{r}^{\textrm{net}}
+\end{array}\right.
+$$
+
+
+It is a displaced beta negative binomial distribution ($\textrm{betaNegBin}(k; s, \alpha, \beta)\equiv\frac{\Gamma(k+s)}{k!\Gamma(s)}\frac{\mathrm{B}(\alpha + s,\beta + k)}{\mathrm{B}(\alpha,\beta)}$) with support in $N_{r} \geq N_{r}^{\textrm{net}}$ and parameters $s = N_{r}^{\textrm{net}} + 1$, $\alpha = \alpha_{r} - 1$ and $\beta=\beta_{r}$.
+
+When  $\alpha_{r},\beta_{r}\gg 1$ (i.e., when $\min(\tilde{P}_{r}^{\textrm{net}}, 1- \tilde{P}_{r}^{\textrm{net}})\cdot N_{r}^{\textrm{reg}}\gg 1$) the beta negative binomial distribution \eqref{eq:betaNegBin} reduces to the negative binomial distribution
+
+$$
+\mathbb{P}\left(N_{r}|N_{r}^{\textrm{net}}\right)=\left\{\begin{array}{ll}
+0 & \textrm{ if } N_{r} < N_{r}^{\textrm{net}},\\
+\mathrm{negbin}\left(N_{r}-N_{r}^{\textrm{net}};\frac{\beta_{r}}{\alpha_{r} +\beta_{r} - 1}, N_{r}^{\textrm{net}} + 1\right)& \textrm{ if } N_{r} \geq N_{r}^{\textrm{net}}.
+\end{array}\right.$$
+
+Note also that $\frac{\beta_{r}}{\alpha_{r} + \beta_{r} -1}\approx 1 - \tilde{P}_{r}^{\textrm{net}}$ so that in this case we do not need the register-based population.
+
+We can also introduce the state process and model the number of individuals $N_r$ in region $r$ of the target population as a Poisson-distributed random variable:
+$$
+N_{r}\simeq\textrm{Poisson}\left(A_{r}\sigma_{r}\right),
+$$
+where $\sigma_{r}$ stands for the population density of region $r$ and $A_{r}$ denotes the area of region $r$. Next, we introduce the following hierarchy:
+$$
+\begin{array}{ll}
+N_{r}^{\textrm{net}} & \mkern-18mu\simeq\mkern-18mu & \textrm{Bin}\left(N_{r}, p_{r}\right),\quad \textrm{ for all } r=1,\dots,R,\\
+N_{r} &\mkern-8mu\simeq\mkern-8mu & \textrm{Poisson}\left(A_{r}\sigma_{r}\right),\quad \textrm{ for all } r=1,\dots,R,\\
+p_{r} & \mkern-18mu\simeq\mkern-18mu & \mathrm{Beta}\left(\alpha_{r}, \beta_{r}\right),\quad \textrm{ for all } r=1,\dots,R,\\
+\sigma_{r} & \mkern-8mu\simeq\mkern-8mu & \mathrm{Gamma}\left(1 + \zeta_{r}, \theta_{r}\right),\quad \textrm{ for all } r=1,\dots,R,
+\end{array}
+$$
+The hyperparameters $\theta_{r}$ and $\zeta_{r}$ are given by:
+$$
+\theta_{r}(\Delta\sigma_{r},\epsilon_{r})  =  \frac{\sigma_{r}^{\textrm{reg}}}{2}\left(1+ \frac{\Delta\sigma_{r}}{\sigma_{r}^{\textrm{reg}}}\right)\left[\sqrt{1 + \left(\frac{2\epsilon_{r}}{1+ \frac{\Delta\sigma_{r}}{\sigma_{r}^{\textrm{reg}}}}\right)^{2}}-1\right],\nonumber\\
+\zeta_{r}(\Delta\sigma_{r},\epsilon_{r})  = \frac{2}{\sqrt{1+\left(\frac{2\epsilon_{r}}{1+\frac{\Delta\sigma_{r}}{\sigma_{r}^{\textrm{reg}}}}\right)^{2}}-1}.
+$$
+where \noindent where $\epsilon_{r}$ can be viewed as the coefficient of variation for $\sigma_{r}^{\textrm{reg}}$ and $\Delta\sigma_{r}$ can be interpreted as the bias for $\sigma_{r}^{\textrm{reg}}$.
+
+## Implementation step by step
+
+Let see now how to compute target population counts using all three method mentioned above. 
+First, we read the files with the posterior location probabilities for each device (coming from *destim* package), the file with the duplicity probabilities (computed with *deduplication* package) and file defining the regions as set of tiles. Using these information we can compute the deduplication factors:
+
+```{r eval = FALSE}
+library(inference, warn.conflicts = FALSE)
+
+path      <- 'extdata'
+
+prefix <- 'postLocDevice'
+postLocPath <- system.file(path, package = 'inference')
+
+
+dpFileName <- system.file(path, 'duplicity.csv', package = 'inference')
+rgFileName <- system.file(path, 'regions.csv', package = 'inference')
+
+omega_r <- computeDeduplicationFactors(dupFileName = dpFileName,
+                                       regsFileName = rgFileName,
+                                       postLocPrefix = prefix,
+                                       postLocPath = postLocPath)
+head(omega_r)
+```
+```
+   region    omega1     omega2
+1:      4 0.9786578 0.02134223
+2:      6 0.7116936 0.28830636
+3:      9 0.6520971 0.34790293
+4:      3 0.7876368 0.21236317
+5:     10 0.7199611 0.28003894
+6:      8 0.8367990 0.16320103
+```
+Then, we can compute the parameters needed by the distribution functions used to estimate the target population. The \code{computeDistrParams} function computes the parameters needed by all three distribution presented in the previous section: $\alpha_r$, $\beta_r$, $\theta_{r}$ and $\zeta_{r}$. The computations are performed under the assumption that $\Delta\sigma_{r} = 0$ and $\epsilon_{r} = 1e-5$ unless the user specify other values for them.
+
+```{r eval = FALSE}
+pRFileName <- system.file(path, 'pop_reg.csv', package = 'inference')
+pRateFileName <- system.file(path, 'pnt_rate.csv', package = 'inference')
+grFileName <- system.file(path, 'grid.csv', package = 'inference')
+params <- computeDistrParams(omega = omega_r,
+                             popRegFileName = pRFileName,
+                             pntRateFileName = pRateFileName,
+                             regsFileName = rgFileName,
+                             gridFileName = grFileName)
+head(params)
+```
+
+```
+   region    omega1     omega2   pntRate regionArea_km2 N0 dedupPntRate    alpha     beta        theta       zeta       Q
+1:      1 0.6878592 0.31214077 0.3684211           10.5 38    0.3109215 11.81502 26.18498 3.619048e-10 9999999173 3.8e-09
+2:      2 0.8991648 0.10083522 0.4000000            7.5 55    0.3798330 20.89081 34.10919 7.333334e-10 9999999173 5.5e-09
+3:      3 0.7876368 0.21236317 0.4153846           12.0 65    0.3712784 24.13310 40.86690 5.416667e-10 9999999173 6.5e-09
+4:      4 0.9786578 0.02134223 0.4615385           10.0 39    0.4566134 17.80792 21.19208 3.900000e-10 9999999173 3.9e-09
+5:      5 0.6734889 0.32651114 0.3666667           10.0 60    0.3068063 18.40838 41.59162 6.000000e-10 9999999173 6.0e-09
+6:      6 0.7116936 0.28830636 0.3720930           12.5 43    0.3184546 13.69355 29.30645 3.440000e-10 9999999173 4.3e-09
+```
+
+We can compute now the population count distribution at $t_0$ using *computeInitialPopulation* function. The distribution used
+to compute the population count is specified using *popDistr* parameter which can have three values *BetaNegBin*, *NegBin* or *STNegBin*. This function also needs the population count detected by the network computed using the *aggregation* package and read from a *csv* file. The result of the *computeInitialPopulation* is a list object with one or two elements. If the parameter *rndVal* is *FALSE* the list will have a single element with descriptive statistics for the population count, which is a data.table object with the following columns: *{region, Mean, Mode, Median, Min, Max, Q1, Q3, IQR, SD, CV, CI_LOW, CI_HIGH}*. If *rndVal* is *TRUE* the list will have a second element which is a data.table object containing the random values generated for each region. The name of the two list elements giving the descriptive statistics and random values for time $t$ are *stats* and *rnd_values*.
+
+```{r eval = FALSE}
+nFileName <- system.file(path, 'nnet.csv', package = 'inference')
+nnet <- readNnetInitial(nFileName)
+
+# Beta Negative Binomial distribution
+n_bnb <- computeInitialPopulation(nnet = nnet, 
+                                  params = params, 
+                                  popDistr = 'BetaNegBin', 
+                                  rndVal = TRUE)
+
+head(n_bnb$stats)
+head(n_bnb$rnd_values)
+```
+A possible result looks like:
+
+```
+     region Mean Mode Median Min Max Q1 Q3 IQR    SD    CV CI_LOW CI_HIGH
+[1,]      1   43   41     39  13 136 31 50  19 17.74 41.55  22.00   77.00
+[2,]      2   60   57     58  24 142 49 69  20 16.19 26.98  38.00   87.53
+[3,]      3   80   68     77  42 176 66 92  25 19.32 24.07  54.97  113.50
+[4,]      4   38   33     37  14 102 30 44  14 11.41 29.86  23.50   58.00
+[5,]      5   77   64     73  26 182 62 89  28 23.19 30.02  47.97  120.06
+[6,]      6   49   36     46  14 140 36 58  22 18.41 37.59  26.00   82.03
+
+```
+and
+```
+region    N NPop
+1:      1 11.0 46.0
+2:      1  9.0 42.0
+3:      1 13.0 52.0
+4:      1 12.0 33.0
+5:      1 12.0 35.0
+6:      1 12.5 30.5
+```
+Here *N* is the population count detected by the network and *NPop* is the target population count.
+
+```{r eval = FALSE}
+# Negative Binomial distribution
+n_nb <- computeInitialPopulation(nnet = nnet, 
+                                 params = params,
+                                 popDistr = 'NegBin', 
+                                 rndVal = TRUE)
+
+head(n_nb$stats)
+head(n_nb$rnd_values)
+```
+
+```
+     region Mean Mode Median Min Max Q1 Q3 IQR    SD    CV CI_LOW CI_HIGH
+[1,]      1   40   34     39  12  82 32 46  14 11.23 28.40  23.94   59.00
+[2,]      2   58   51     57  27 100 50 65  15 11.89 20.46  41.00   80.00
+[3,]      3   79   76     78  48 130 70 86  16 12.63 16.08  60.00  100.03
+[4,]      4   37   36     36  17  66 32 42  10  7.95 21.52  25.00   50.50
+[5,]      5   75   75     74  33 128 64 84  20 15.10 20.21  51.50  100.50
+[6,]      6   44   43     44  18  84 36 51  14 10.82 24.41  28.00   62.50
+```
+
+```
+   region    N NPop
+1:      1 11.0 24.0
+2:      1  9.0 33.0
+3:      1 13.0 61.0
+4:      1 12.0 32.0
+5:      1 12.0 49.0
+6:      1 12.5 79.5
+```
+
+```{r eval = FALSE}
+# State process Negative Binomial distribution
+n_stnb <- computeInitialPopulation(nnet = nnet, 
+                                  params = params,
+                                  popDistr= 'STNegBin', 
+                                  rndVal = TRUE)
+
+head(n_stnb$stats)
+head(n_stnb$rnd_values)
+
+```
+```
+     region Mean Mode Median Min Max Q1 Q3 IQR   SD    CV CI_LOW CI_HIGH
+[1,]      1   37   36     37  22  55 34 41   8 5.45 14.71  29.00   45.53
+[2,]      2   55   54     54  36  73 51 59   8 6.09 11.10  45.00   64.50
+[3,]      3   69   68     68  49  96 64 74   9 6.72  9.74  58.00   80.00
+[4,]      4   37   36     37  22  56 33 40   7 5.13 13.95  29.00   45.00
+[5,]      5   63   62     63  42  88 58 68   9 6.89 10.91  52.00   74.50
+[6,]      6   42   40     42  26  60 38 46   8 5.51 13.05  33.97   51.00
+```
+
+```
+   region    N NPop
+1:      1 11.0 36.0
+2:      1  9.0 33.0
+3:      1 13.0 40.0
+4:      1 12.0 42.0
+5:      1 12.0 36.0
+6:      1 12.5 36.5
+```
+
+# The dynamical approach: population at $t>t_0$
+
+## Methodological aspects
+
+Currently, we consider only \textbf{closed} populations, i.e.\ neither individuals nor devices enter into or leave the territory under analysis along the whole time period.
+We begin by considering a balance equation and denote by $N_{t,rs}$ the number of individuals moving from region $s$ to region $r$ in the time interval $(t-1, t)$. Then, we can write:
+$$
+N_{tr} =  N_{t-1r}+\sum_{\substack{r_{t}=1\\r_{t}\neq r}}^{N_{T}}N_{t,rr_{t}} - \sum_{\substack{r_{t}=1\\r_{t}\neq r}}^{N_{r}}N_{t,r_{t}r}\nonumber\\
+  =  \sum_{r_{t}= 1}^{N_{T}}\tau_{t,rr_{t}}\cdot N_{t-1r_{t}},
+$$
+where we have defined $\tau_{t,rs}=\frac{N_{t,rs}}{N_{t-1s}}$ ($0$ if $N_{t-1s} = 0$). Notice that $\tau_{t,rs}$ can be interpreted as an aggregate transition probability from region $s$ to region $r$ at time interval $(t-1, t)$ in the target population.
+Thus, we can use $\tau_{t,rs}^{\textrm{net}}\equiv\frac{N^{\textrm{net}}_{t,rs}}{N^{\textrm{net}}_{t-1s}}$ to model $\tau_{t,rs}$. In particular, as our first choice we shall postulate $\tau_{t,rs}=\tau_{t,rs}^{\textrm{net}}$. The probability distributions of $N^{\textrm{net}}_{s t-1}$ and $[\mathbf{N}^{\textrm{net}}_{t}]_{sr} = N_{t,rs}^{\textrm{net}}$ were indeed already computed in the *aggregation* package.
+
+
+## Implementation step by step
+
+We show now how to compute the population count distribution at time instants $t > t_0$. We will use the target population count estimated at $t_0$ using the three distributions already mentioned: Beta Negative Binomial, Negative Binomial and the state process Negative Binomial. Target population distribution is computed using *computePopulationT* function. As inputs it needs the population distribution at $t_0$ (here we will use all three previous results), the name of the file with the population moving from one region to another and an optional parameter *rndVal*. The result of this  function  is a list with one element for each time instant (including $t_0$). Each element of the list is also a list with one or two elements, depending on the value of the *rndVal* parameter. If *rndVal* is *TRUE* there are two elements in the list corresponding to time instant $t$. The first one is a data.table object with some descriptive statistics for the population count at time $t$, containing the following columns:*{region, Mean, Mode, Median, Min, Max, Q1, Q3, IQR, SD, CV, CI_LOW, CI_HIGH}*. The second one is a data.table object with the random values for population count generated for each region, with the following columns: *{region, iter, NPop}*. If *rndVal* is *FALSE* the list for time instant $t$ contains only the first element previously mentioned. The name of the list element corresponding to time instant $t$ is *t* and the name of the two list elements giving the descriptive statistics and random values are *stats* and *rnd_values*.
+
+First, set the name of the file with the population moving from one region to another (this file is an output of the *aggregation* package). Notice that this file is stored as a zip archive because it could be very large. 
+
+```{r eval = FALSE}
+nnetODFile <- system.file(path, 'nnetOD.zip', package = 'inference')
+```
+Then, we call *computePopulationT*:
+
+```{r eval=FALSE}
+# Beta Negative Binomial distribution
+nt_bnb <- computePopulationT(nt0 = n_bnb$rnd_values, 
+                             nnetODFileName = nnetODFile, 
+                             rndVal = TRUE)
+```
+
+To display the results we select a random time instant first and then display the results for it:
+```{r eval=FALSE}
+
+times <- names(nt_bnb)
+t <- sample(1:length(times), size = 1)
+t
+head(nt_bnb[[t]]$stats)
+head(nt_bnb[[t]]$rnd_values)
+```
+A possible results is displayed below:
+```
+ 62
+ 
+      region Mean Mode Median Min Max  Q1  Q3 IQR    SD    CV CI_LOW CI_HIGH
+ [1,]      1   35   33     33   9  88  27  41  14 11.89 34.35     18      56
+ [2,]      2   67   60     65  31 142  57  76  19 14.82 22.16     46      93
+ [3,]      3  166  161    164  96 259 150 181  31 23.38 14.11    131     205
+ [4,]      4   41   32     40  14  93  33  48  15 11.08 27.09     25      60
+ [5,]      5   81   80     80  45 137  70  89  19 15.07 18.70     58     106
+ [6,]      6   23   19     22   2  52  17  27  10  7.66 33.73     12      36
+
+ 
+    region iter NPop
+1:      1    1   52
+2:      2    1   57
+3:      3    1  184
+4:      4    1   49
+5:      5    1   80
+6:      6    1   33
+ 
+```
+The *iter* column show the index of the random value generated for a region. The total number of random values generated for each region equals the same number used in the *aggregation* package that provides the input for this function.
+
+
+```{r eval=FALSE}
+# Negative Binomial distribution
+nt_nb <- computePopulationT(nt0 = n_nb$rnd_values, 
+                            nnetODFileName = nnetODFile, 
+                            rndVal = TRUE)
+
+# to display results, select a random time instant
+times <- names(nt_nb)
+t <- sample(1:length(times), size = 1)
+t
+head(nt_nb[[t]]$stats)
+head(nt_nb[[t]]$rnd_values)
+```
+
+```{r eval=FALSE}
+# State process Negative Binomial distribution
+nt_stnb <- computePopulationT(nt0 = n_stnb$rnd_values, 
+                              nnetODFileName = nnetODFile, 
+                              rndVal = TRUE)
+
+# to display results, select a random time instant
+times <- names(nt_stnb)
+t <- sample(1:length(times), size = 1)
+t
+head(nt_stnb[[t]]$stats)
+head(nt_stnb[[t]]$rnd_values)
+```
+
+# Origin-destination matrices
+
+## Methodological aspects
+
+The inference of the origin-destination matrices for the target population is more delicate than the present population because auxiliary information from population registers do not contain this kind of information. 
+
+We use a simple approach extending the model from the previous section to produce the origin-destination matrices. If $N_{tr}$ and $\tau_{t,rs}$ denote the number of individuals of the target population at time $t$ in region $r$ and the aggregate transition probability from region $s$ to region $r$ at the time interval $(t-1,t)$, then we can simply define $N_{t,rs} = N_{t-1s}\times\tau_{t,rs}$ and trivially build the origin-destination matrix for each time interval $(t-1, t)$. Under the same general assumption as before, if individuals are to move across the geographical territory independently of their mobile network operator (or even not being a subscriber or carrying two devices), we can postulate as a first simple choice $\tau_{t,rs}=\tau_{t,rs}^{\textrm{net}}$, as before.
+
+
+
+## Implementation step by step
+
+As final step, the origin-destination matrices for all pairs of time instants *time_from-time_to* are computed using all three results computed for the population at $t_0$ (using Beta Negative Binomial, Negative Binomial and the state process Negative Binomial). The actual computation is performed by *computePopulationOD* function which takes the same input parameters as *computePopulationT*. The result of this function is again a list with one element for each pair of *time_from-time_to*. Each element of the list is also a list with one or two elements, depending on the value of the *rndVal* parameter. If *rndVal* is *TRUE* there are two elements in the list corresponding to time instant a pair *time_from-time_to*. The first one is a data.table object with some descriptive statistics for the origin-destination matrix, containing the following columns: *{region_from, region_to, Mean, Mode, Median, Min, Max, Q1, Q3, IQR, SD, CV, CI_LOW, CI_HIGH}*. The second one is a data.table object with the random values for origin-destination matrix generated for each pair of time instants *time_from-time_to* and each pair of regions *region_from-region_to*, with the following columns: *{region_from, region_to, iter, NPop}*. If *rndVal* is *FALSE* the list for a pair of time instants *time_from-time_to* contains only the first element previously mentioned. The name of the list element corresponding to a pair of time instants is *time_from-time_to* and the name of the two list elements giving the descriptive statistics and random values are *stats* and *rnd_values*.
+
+
+```{r eval=FALSE, message=FALSE}
+# Beta Negative Binomial distribution
+OD_bnb <- computePopulationOD(nt0 = n_bnb$rnd_values, 
+                              nnetODFileName = nnetODFile, 
+                              rndVal = TRUE)
+
+# to display results, select a random time instant
+time_pairs <- names(OD_bnb)
+i <- sample(1:length(time_pairs), size = 1)
+time_pairs[i]
+head(OD_bnb[[i]]$stats)
+head(OD_bnb[[i]]$rnd_values)
+```
+
+```{r eval=FALSE}
+# Negative Binomial distribution
+OD_nb <- computePopulationOD(nt0 = n_nb$rnd_values, 
+                             nnetODFileName = nnetODFile, 
+                             rndVal = TRUE)
+
+# to display results, select a random time instant
+time_pairs <- names(OD_nb)
+i <- sample(1:length(time_pairs), size = 1)
+time_pairs[i]
+head(OD_nb[[i]]$stats)
+head(OD_nb[[i]]$rnd_values)
+```
+
+```{r eval=FALSE}
+# State process Negative Binomial distribution
+OD_stnb <- computePopulationOD(nt0 = n_stnb$rnd_values, 
+                               nnetODFileName = nnetODFile, 
+                               rndVal = TRUE)
+
+# to display results, select a random time instant
+time_pairs <- names(OD_stnb)
+i <- sample(1:length(time_pairs), size = 1)
+time_pairs[i]
+head(OD_stnb[[i]]$stats)
+head(OD_stnb[[i]]$rnd_values)
+
+```
+
+# The inference REST API
+
+## A conceptual overview
+
+The *inference* package can expose its main functions as a http REST API. This feature is implemented using the *plumber* package. Exposing the functionalities of this package as a http API has several advantages:
+
+* APIs are flexible, easy to deploy and maintain, and they are accessible by multiple clients at the same time;
+
+* APIs can be accessed via Internet by anyone without install any R package on his/her computer (destim, deduplication, aggregation, inference), so, our software is easily accessible;
+
+* a user can write not only R code to access the functions exposed by the *inference* package, but he/she can use
+any language (Java, Python, etc.) capable of sending API requests over Internet;
+
+* for large datasets, the functions from the *inference* package can take a long time to compute their results. In this case the *inference* package can  be installed on a powerful computer that make public its API to all the users; 
+
+Using a htpp REST API to access the processing functions in the *inference* package is in line with the proposed models of mobile phone data usage: the data sets stays in the MNO premises and the statisticians perform their data analyses call functions from the available API. Of course, the functions available through the API should be first agreed between the MNOs and statistical offices. In a real environment, more precaution should be taken, i.e. using encrypted connections or even VPNs.
+
+In the following image we have a representation of the interaction between a client and the *inference* API. 
+
+![](inference-api.jpg)
+
+A client that can be a script/program written in R, Python, Java or any other language sends a request to the Web server exposing the API. In turn, the server calls the specific R functions invoked by the API sending them the parameters extracted from the body of the request. An R instance runs the function and sends back the results to the server. The server packs the results in a supported format (JSON for example) and sends the response to the client which unpacks the body of the response to get the requested data.
+
+## Implementation step by step
+
+We implemented this feature using the *plumber* R package. The first step is to install the *inference* package on the server which can be the local computer (as we will use in our examples) or another true Web server accessible via Internet.
+
+We will use the same computer as client and server and we need to run two instances of R. In one instance we will start the http API:
+
+```{r eval=FALSE, message=FALSE}
+library(plumber)
+pathPL <-'plumber'
+initPop_api <- plumber::plumb(system.file(pathPL, 'plumb.R', package = 'inference'))
+initPop_api$run(host = '127.0.0.1', port = 8000)
+```
+The address 127.0.0.1 can be changed with the address of any other server. After running these lines of code, if we access the localhost at port 8000 we will see the following interface:
+
+![](inference-web-api.jpg)
+
+Here we can see the names of the endpoints of our API as well as the methods that can be used to access them (in out case GET and POST). Our API exposes the *computeDeduplicationFactors()*, *computeDistrParams()*, *computeInitialPopulation()*, *computePopulationT()* and *computePopulationOD()* functions as main processing functions and *getPath()* and *readNnetInitial()* needed for intermediate steps. The end points of the API have the same names as the functions they make public.
+
+Now we have to switch to the other R instance which will act as a client. First we have to set the folder where the file with duplicity probabilities and the file defining the regions are stored and the prefix of the posterior
+location probabilities files for all devices.
+
+Please note that if you run this example using a true client-server configuration, where the client and the server reside on different machine, in the same or different networks, the IP addresses should be update accordingly. The path of the files needed for computation shloud be also updated according to their actual location.
+
+```{r eval=FALSE, message=FALSE}
+library(httr)
+library(jsonlite)
+library(data.table)
+ 
+# set the folder where the necessary input files are stored and the prefix of the input file names.
+path      <- 'extData'
+prefix <- 'postLocDevice'
+dpFileName <- system.file(path, 'duplicity.csv', package = 'inference')
+rgFileName <- system.file(path, 'regions.csv', package = 'inference')
+
+```
+Next we compute the deduplication factors. For this we have prepare the body of the http request, set the API path, set the url of the API and then send the request. In our example we used the POST method to send this request. The body of the http request contains the parameters needed by the R function that will compute the deduplication factors. They are send packing them in JSON format.
+
+```{r eval=FALSE, message=FALSE}
+# prepare the body of the http request
+body <- list(
+ .dupFileName = dpFileName,
+ .regsFileName = rgFileName,
+ .postLocPrefix = prefix,
+ .postLocPath = postLocPath
+)
+ 
+# set API path
+pathDedup <- 'computeDeduplicationFactors'
+ 
+# send POST Request to API
+url <- "http://127.0.0.1:8000"
+raw.result <- POST(url = url, path = pathDedup, body = body, encode = 'json')
+```
+Now we obtained the result. First, we check that everything went OK (we have to obtain code 200) and then unpack it from JSON format back to an R object:
+
+```{r eval = FALSE}
+# check status code
+raw.result$status_code
+
+# transform back the results from json format
+omega_r <- as.data.table(fromJSON(rawToChar(raw.result$content)))
+```
+Next, we compute the parameters of the posterior distribution of the population count using a similar approach: prepare the input data and build the body of the http request, set the API path and then send the request. After the API send back the response we check the status code (it should be 200 if all went OK) and unpack the response from JSON to an R object.
+
+```{r eval = FALSE}
+# Compute the parameters of the distribution
+# First reads the number of individuals detected by network
+nFileName <- system.file(path, 'nnet.csv', package = 'inference')
+nnet <- readNnetInitial(nFileName)
+
+pRFileName <- system.file(path, 'pop_reg.csv', package = 'inference')
+pRateFileName <- system.file(path, 'pnt_rate.csv', package = 'inference')
+grFileName <- system.file(path, 'grid.csv', package = 'inference')
+ 
+# prepare the body of the http request
+body <- list(
+  .omega = omega_r,
+ .popRegFileName = pRFileName,
+ .pntRateFileName  = pRateFileName,
+ .regsFileName = rgFileName,
+ .gridFileName = grFileName,
+ .rel_bias = 0,
+ .cv = 1e-5
+)
+ 
+# set API path
+pathDistr <- 'computeDistrParams'
+
+# send POST Request to API
+raw.result <- POST(url = url, path = pathDistr, body = body, encode = 'json')
+ 
+# check status code
+raw.result$status_code
+
+# transform back the results from json format
+params <- as.data.table(fromJSON(rawToChar(raw.result$content)))
+```
+We can compute now the population at initial time. In our example we will use only the Beta Negative Binomial distribution. A similar approach should be followed for the other two distributions.
+
+```{r eval = FALSE}
+# Compute the population count distribution at t0 using the Beta Negative Binomial distribution
+ 
+# prepare the body of the http request
+body <- list(
+ .nnet = nnet,
+ .params = params,
+ .popDistr = 'BetaNegBin',
+ .rndVal = TRUE,
+ .ciprob = 0.95,
+ .method = 'ETI'
+)
+ 
+# set API path
+pathInit <- 'computeInitialPopulation'
+ 
+# send POST Request to API
+raw.result <- POST(url = url, path = pathInit, body = body, encode = 'json')
+
+# check status code
+raw.result$status_code
+
+# transform back the results from json format
+n_bnb <- fromJSON(rawToChar(raw.result$content))
+ 
+# display results
+n_nb$stats
+head(n_nb$rnd_values)
+```
+
+Computing the population at time instants t > t0 is done as follows:
+```{r eval = FALSE}
+# Compute the population count distribution at time instants t > t0 using the Beta Negative Binomial distribution
+# first set the name of the file with the population moving from one region to another (output of the aggregation # package)
+nnetODFile <- system.file(path, 'nnetOD.zip', package = 'inference')
+ 
+# prepare the body of the http request
+body <- list(
+ .nt0 = as.data.table(n_bnb$rnd_values),
+ .nnetODFileName = nnetODFile,
+ .zip = TRUE,
+ .rndVal = TRUE,
+ .ciprob = 0.95,
+ .method = 'ETI'
+)
+ 
+# set API path
+pathT <- 'computePopulationT'
+ 
+# send POST Request to API
+raw.result <- POST(url = url, path = pathT, body = body, encode = 'json')
+ 
+# check status code
+raw.result$status_code
+ 
+# transform back the results from json format
+nt_bnb <- fromJSON(rawToChar(raw.result$content))
+ 
+# display results
+# first, select a random time instant
+times <- names(nt_bnb)
+t <- sample(1:length(times), size = 1)
+t
+nt_bnb[[t]]$stats
+head(nt_bnb[[t]]$rnd_values)
+```
+
+Finally, we show how to compute the origin-destination matrix:
+```{r eval = FALSE}
+# Compute the Origin-Destination matrices for all pairs of time instants time_from-time_to using the Beta Negative # Binomial distribution
+ 
+# prepare the body of the http request
+body <- list(
+ .nt0 = as.data.table(n_bnb$rnd_values),
+ .nnetODFileName = nnetODFile,
+ .zip = TRUE,
+ .rndVal = TRUE,
+ .ciprob = 0.95,
+ .method = 'ETI'
+)
+ 
+# set API path
+pathOD <- 'computePopulationOD'
+ 
+# send POST Request to API
+raw.result <- POST(url = url, path = pathOD, body = body, encode = 'json')
+ 
+# check status code
+raw.result$status_code
+ 
+# transform back the results from json format
+OD_bnb <- fromJSON(rawToChar(raw.result$content))
+ 
+# display results
+time_pairs <- names(OD_bnb)
+# first, select a random time instants pair
+i <- sample(1:length(time_pairs), size = 1)
+time_pairs[i]
+OD_bnb[[i]]$stats
+head(OD_bnb[[i]]$rnd_values)
+```
+
+
+# Some remarks about computational efficiency
+
+Functions is this package make use of the processing features of the data.table package which implements them very efficiently. Since population at $t$ depends on population at $t-1$, the computation of the target population distributions at different time instants is inherently sequential. Functions that takes a longer time to execute display a progress bar to show how the computations advance.
+In the API mode, the computational efficiency could be supported by a powerful server machine. More, parallelization of the computations is achieved on server if several clients call in the same time different functions from API.
+
+# References

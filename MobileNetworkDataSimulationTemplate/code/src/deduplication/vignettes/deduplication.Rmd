@@ -1,0 +1,335 @@
+---
+title: "Introduction to deduplication package"
+author: "Bogdan Oancea"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib  
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette contains a short introduction to *deduplication* package. It describes its main purpose, presents some technical details of its implementation and provide examples on how to use this package. Some basic knowledge about *destim* package would be useful to understand how this package works. A detailed description of the methodological approach implemented by this package can be found in @WP5Deliverable1.3 and in @bmc_paper. To fully understand the theory behind this package it is recommended to read the above mentioned papers.
+
+
+# Introduction
+This section contains a brief explanation about the intended use of the package and provides a short introduction to the underlaying methodology.
+
+## Device duplicity problem
+The problem of device multiplicity comes from the fact that the statistical unit of analysis with mobile network data is the individual of a target population, not a mobile device. Since an individual can carry more than one device with him/her, this introduces the problem of multiple counting. For simplicity we make the simplifying assumption that each individual can carry at most $2$ devices. 
+
+The main purpose of this package is to classify each device $d$ in a dataset as corresponding to an individual with only one device (1:1 correspondence between devices and individuals) or as corresponding to an individual with two devices (2:1 correspondence between devices and individuals). This classification will be probabilistic, thus assigning a probability $p_{d}$ of duplicity to each device $d$.
+
+Two main methodological approaches are implemented by the *deduplication* package:
+
+1. A Bayesian approach with network events data
+2. An approach based on the distance between centers of location probabilities
+
+## The Bayesian approach based on network events
+Denoting by $D_{d_i d_j}$ the event which has the meaning "devices $d_i$ and $d_j$ are carried by the same individual" and by$D^c_{d_i d_j}$ the event with the meaning "devices $d_i$ and $d_j$ are not carried by the same individual" the duplicity probability for device $d_i$ is the pair duplicity probability $p_{d_id_j} \equiv \mathbb{P}(D_{d_i d_j}| \mathbf{E}, \mathbf{I})$ corresponding to device $d_j$more similar to $d_i$ and we can write $p_{d_i}= \max_{d_j\neq d_i}\mathbb{P}\left(D_{d_id_j}|\mathbf{E}, \mathbf{I}\right)$. Obviously, $p_{d_i d_i} = 0$ for all $i$.
+
+### The pair approach
+We compute the pair-duplicity probabilities $p_{d_{i}d_{j}}$ for two devices $d_{i}$ and $d_{j}$ using the Bayes theorem: 
+
+$$\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{E}, \mathbf{I}\right)=\frac{\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}^{c}\right)\mathbb{P}\left(D_{d_{i}d_{j}}^{c}| \mathbf{I}\right)}{\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}\right)\mathbb{P}\left(D_{d_{i}d_{j}}| \mathbf{I}\right) + \mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}^{c}\mathbf{I}\right)\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{I}\right)} =\frac{1}{1 + \frac{\mathbb{P}\left(D_{d_{i}d_{j}}|\mathbf{I}\right)}{\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{I}\right)}\times \frac{\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}, \mathbf{I}\right)}{\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}^{c}, \mathbf{I}\right)} }$$
+
+Here  $\mathbb{P}\left(D_{d_{i}d_{j}}|\mathbf{I}\right)$ and $\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{I}\right)$ are the prior probabilities for the duplicity and non-duplicity events and
+
+$\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}, \mathbf{I}\right)$ and $\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}^{c}, \mathbf{I}\right)$  stands for the likelihoods under each hypothesis $D_{d_{i}d_{j}}$ and $D_{d_{i}d_{j}}^{c}$, respectively.
+
+After some mathematical manipulations we arrive at the following formula:
+
+$$p_{d_{i}}=\max_{j\neq i}\left(\frac{1}{\left(1 + \alpha*\exp\left(\ell_{ij} - \ell_{i} -\ell_{j}\right)\right)}\right)$$, 
+
+where $\alpha = \frac{P_2}{P_1}$, $P_1$ is the aprori probablity of duplicity for a device and $P_2=1-P_1$.
+
+### The one-to-one approach
+If we start from $p_{d_i} = \mathbb{P}\left( D_{d_i d_i} |  \mathbf{E}, \mathbf{I}  \right)$ and take into consideration  that the entire event set $\Omega_{d_i}$ for device $d_i$ can be decomposed as $\Omega_{d_i} = \cup_{d_j} D_{d_i d_j}$ we can apply again the Bayes theorem and obtain:
+
+$$p_{d_i} = 1 - \frac{1}{1 + \alpha_{d_id_j} \times \sum_{j\neq i} \exp\ (\ell_i + \ell_j - \ell_{ij}) }$$
+
+where $\ell_i$ and $\ell_j$ are loglikelihoods for single a device ($i$ and $j$ in this case), $\ell_{ij}$ is the loglikelihood for two the devices $d_i$ and $d_j$ and $\alpha = \frac{1-P_1}{P_1}$, $P_1$ is the apriori probability of 1:1 correspondence for all devices.
+
+In both approaches, the likelihood for two devices $\ell_{ij}$ is computed using a similar HMM model as for one device with the difference in the emission model:  the emission probabilitiea are computed as as the product of the
+original single-device emission probabilities for $d_i$ and $d_j$.
+
+If we denote $\lambda^{(1)}_{d_i} = \frac{\mathbb{P}\left(D_{d_i d_i}|\mathbf{I}\right)}{1-\mathbb{P}\left(D_{d_i d_j}|\mathbf{I}\right)}$
+the prior odds ratio which gives how much more probable is that an individual carries a priori only one device
+$d_i$ than another device together with $d_i$, considering that apriori any other device $d_j$ can be the second device so that $\mathbb{P}\left( D_{d_i d_j}|\mathbf{I} \right)$ is constant for any other device $d_j$ and $\mathbb{P}\left( D_{d_id_i} | \mathbf{I} \right) + (N_D-1)* \mathbb{P}\left( D_{d_id_j} | \mathbf{I} \right) =1$, where $N_D$ is the total number of devices, we arrive at the following formula for the probability of duplicity:
+
+$$p_{d_i}= 1 - \frac{1}{1+\frac{\exp\left(-\ell_{d_i}\right)}{\lambda_{d_i} \times \left(N_D-1\right)} \sum_{j \neq i} \exp\left(\ell_{d_i d_j}\right)}$$
+
+Thus, depending on the available information, if there is information at the device level that can be used to evaluate $\lambda_{d_i}$, the latter formula can be used to compute the duplicity probability, otherwise, the former formula with a single value of $\alpha$ for all devices is used.
+
+## The trajectory approach 
+
+This approach also follows a Bayesian approach, but instead of using network event variables $\mathbf{E}$ we will use properties of the trajectories derived from the HMMs, i.e. the location probability distributions $\{\gamma_{d_{ti}}\}$ of all devices $d$.
+
+Applying the Bayes theorem again we have:
+
+$$\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{X}, \mathbf{I}\right) = \frac{1}{1 + \frac{\mathbb{P}\left(D_{d_{i}d_{j}}|\mathbf{I}\right)}{\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{I}\right)}\times    \frac{\mathbb{P}\left(\mathbf{X}|D_{d_{i}d_{j}}, \mathbf{I}\right)}{\mathbb{P}\left(\mathbf{X}|D_{d_{i}d_{j}}^{c}, \mathbf{I}\right)} }$$, 
+
+where $\mathbf{X}$ is a variable related to the estimated trajectories in terms of posterior location probabilities.
+
+To apply this idea we compute the probability distribution of the signed distance between the x- and y-axis position of each pair of devices (we denote these random variables by $\Delta_{x, d_i d_j t} = X_{d_i t} - X_{d_j t}$ and $\Delta_{y, d_i d_j t} = Y_{d_i t} - Y_{d_j t}$) and count how many times the mode of these distributions are less than a predefined quantity ($\gamma \times \max\left( r_{d_i t}, r_{d_j t} \right)$. If a device $d_{i}$ corresponds to an individual with two devices (2:1), there will be another device $d_{j}$ such that their distance will be significatively close to $0$ along their trajectories.
+
+We define:
+
+$$\hat{p}_{d_{i}d_{j}}^{\textrm{mode}}\equiv\mathbb{P}\left(\mathbf{X}|D_{d_{i}d_{j}}, \mathbf{I}\right) = \frac{\#\{t=1,\dots, T:|\delta_{xt}^{*}|\leq \xi\cdot\max\{rd_{d_{i}t}, rd_{d_{j}t}\}, |\delta_{yt}^{*}|\leq \xi\cdot\max\{rd_{d_{i}t}, rd_{d_{j}t}\}\}}{T}$$,
+
+where $\delta_{xt}^{*}$ and $\delta_{yt}^{*}$ are the mode of the $\Delta_{x, d_i d_j t}$ and $\Delta_{y, d_i d_j t}$ variables. The duplicity probability will be given by:
+
+$$p_{d_{i}} = \max_{j\neq i}\left(1 - \frac{1}{1 + \alpha\times \frac{\hat{p}_{d_{i}d_{j}}^{\textrm{mode}}}{1 - \hat{p}_{d_{i}d_{j}}^{\textrm{mode}}}}\right)$$
+
+where $\alpha = \frac{P_1}{1-P_1}$, $P_1$ being the apriori probability of duplicity.
+
+# Syntax and basic usage
+
+This section explains briefly the main functions of the package and how to use each method of computing the duplicity probability implemented in the *deduplication* package.
+In all the examples below we will use the data set included in this package. This data set was generated using the simulation software. The first step will be to set the path to the data:
+
+```r
+library(deduplication)
+path_root <- 'extdata'
+```
+
+## The Bayesian approach with network events - the pairs method
+
+Firstly, we need a series of input parameters: 
+
+```r
+gridParams <-readGridParams(system.file(path_root, 'grid.csv', package = 'deduplication'))
+```
+
+`gridParams` is a list that contains the number of rows and columns of the grid and the tile dimensions along OX and OY axes.
+
+Since we will wqork with simulated data in our example, we need some parameters that were used to generate the data set: the probability of a person to have two mobile devices (needed for the apriori duplicity probability) and
+the minimum value of the signal strength/quality to allow a connection between a mobile device and an antenna. These two values are read from the `simulation.xml` file:
+
+```r
+simParams <-readSimulationParams(system.file(path_root, 'simulation.xml', package = 'deduplication'))
+```
+
+We also need to read the network events:
+
+```r
+events <- readEvents(system.file(path_root, 'AntennaInfo_MNO_MNO1.csv', package = 'deduplication'))
+```
+
+From the `events` table we can easily build a list of devices present in the current data set and a table with the
+antenna IDs where these devices are connected for every time instant:
+
+```r
+devices <- getDeviceIDs(events)
+connections <- getConnections(events)
+```
+
+`devices` is a (sorted) list of the IDs of all devices detected by the network and `connections` is a matrix with
+each row corresponding to a device and the elements on the columns corresponding to the IDs of the antenna where 
+the device is connected at a every time instant.
+
+The next step will be the computation of the emission probabilities for the individual HMM models (for each device) and for the joint models (for pairs of devices). Since the emission probabilities are computed for each tile in the grid we need the number of rows and columns of the grid and also the file with the signal strength/quality. We also
+need the minimum value of the signal strength/quality that allows a connection between a mobile device and an
+antenna and we'll use it to set to 0 the signal strength/quality for each tile where the actual value is below
+this threshold.
+
+```r
+emissionProbs <- getEmissionProbs(gridParams$nrow, gridParams$ncol, system.file(path_root, 'SignalMeasure_MNO1.csv', package = 'deduplication'), simParams$conn_threshold)
+
+jointEmissionProbs <- getEmissionProbsJointModel(emissionProbs)
+```
+
+Using the emission probablities we can build the generic HMM model (for each individual device) and the joint HMM model (for pairs of devices):
+
+```r
+model <- getGenericModel(gridParams$nrow, gridParams$ncol, emissionProbs)
+modelJ <- getJointModel(gridParams$nrow, gridParams$ncol, jointEmissionProbs)
+```
+
+We can fit now the individual models:
+```r
+ll <- fitModels(length(devices), model, connections)
+```
+
+`fitModels` calls the `fit` function from *destim* package to do this task. Being a time consuming operation, it builds a cluster of working nodes and spreads the computations for subsets of devices to these nodes. Th number of
+working nodes equals the number of logical cores of the computer. On Windows the cluster is a **SOCK** one while
+on Unix-like operating systems (Linux and MacOS) it is a **FORK** cluster, taking advantage of its higher speed.
+
+The `pairs` method needs to receive a list of pairs of devices and the corresponding antennas where they are connected at every time instant. This list depends on the number of devices and
+could be very large which means a long execution time. To shorten the execution time we can exclude from the list of pairs the devices that are impossible to belong to the same person. For this, we first build a list of neighbouring antennas, considering that two antennas are neighbours if their coverage areas (cells) have a non void intersection. Then, this list will be used to retain only those devices connected to neighboring antennas most of the time.
+
+```r
+coverarea <- readCells(system.file(path_root, 'AntennaCells_MNO1.csv', package = 'deduplication'))
+antennaNeigh <- antennaNeighbours(coverarea)
+```
+
+The apriori probability of duplicity is simply given by:
+```r
+P1 <- aprioriDuplicityProb(simParams$prob_sec_mobile_phone, length(devices))
+```
+
+We can build now the pairs of devices needed to compute the duplicity probabilities:
+```r
+pairs4dup<-computePairs(connections, length(devices), oneToOne = FALSE, P1 = P1, limit = 0.05, antennaNeighbors = antennaNeigh)
+```
+
+Note that we set `oneToOne = FALSE` to build the *reduced* list of pairs of devices that takes into consideration
+the exclusion criterion mentioned above.
+
+The duplicity probability for each devices is now computed as:
+```r
+probDup <- computeDuplicityBayesian("pairs", devices, pairs4dup, modelJ, ll, P1)
+```
+
+`probDup` is a table where on the first columns we have the device ID and on the second column we have the corresponding duplicity probability.
+
+## The Bayesian approach with network events - the 1-to-1 method
+
+This method needs a complete list of pairs of devices and it also uses as an input parameter the apriori probability for 1-to-1 correspondence between devices and owners. 
+We repeat here the sequence of the first ten instructions which are the same as in the preceding example:
+
+```r
+gridParams <-readGridParams(system.file(path_root, 'grid.csv', package = 'deduplication'))
+simParams <-readSimulationParams(system.file(path_root, 'simulation.xml', package = 'deduplication'))
+events <- readEvents(system.file(path_root, 'AntennaInfo_MNO_MNO1.csv', package = 'deduplication'))
+devices <- getDeviceIDs(events)
+connections <- getConnections(events)
+emissionProbs <- getEmissionProbs(gridParams$nrow, gridParams$ncol, system.file(path_root, 'SignalMeasure_MNO1.csv', package = 'deduplication'), simParams$conn_threshold)
+jointEmissionProbs <- getEmissionProbsJointModel(emissionProbs)
+model <- getGenericModel(gridParams$nrow, gridParams$ncol, emissionProbs)
+modelJ <- getJointModel(gridParams$nrow, gridParams$ncol, jointEmissionProbs)
+ll <- fitModels(length(devices), model, connections)
+```
+
+Now, we compute the apriori probability for 1-to-1 correspondence and build the pairs of devices:
+
+```r
+Pii <- aprioriOneDeviceProb(simParams$prob_sec_mobile_phone, length(devices))
+pairs4dup<-computePairs(connections, length(devices), oneToOne = TRUE)
+```
+
+Finally, we call the `computeDuplicityBayesian` function:
+
+```r
+probDup2 <- computeDuplicityBayesian("1to1", devices, pairs4dup, modelJ, ll, P1 = NULL, Pii=Pii)
+```
+which gives the table with duplicity probability for each device.
+
+If we have the value of the `lambda` parameter for each device (or a single value for all devices) we can call the same function but instead of providing the apriori probability for 1-to-1 correspondence, we can provide the value of `lambda` (the value given here is only for convenience):
+
+```r
+probDup3 <- computeDuplicityBayesian(method, devices, pairs4dup, modelJ, ll, P1 = NULL, Pii = NULL, init = TRUE, lambda = 0.67)
+```
+
+## The trajectory approach
+
+The trajectory method needs a path to the files with the posterior location probabilities. These files should
+have the following name convention: `postLocDevice_` + *deviceID* + `.csv`. The files with the posterior location probabilities are obtained with the *destim* package.
+We provide all the files needed to run this example. 
+
+Below is the sequence of instructions to compute the duplicity probabilities using the trajectory method. We need to read the network events file only to obtain
+the list of devices and sequence of time instants. If they are available separately they can be provided without the need of the events file. To shorten the execution time we've made use of the same technique to reduce the number of the pairs of devices as in the first example (the `pairs` method).
+
+```r
+gridParams <-readGridParams(system.file(path_root, 'grid.csv', package = 'deduplication'))
+events <- readEvents(system.file(path_root, 'AntennaInfo_MNO_MNO1.csv', package = 'deduplication'))
+devices <- getDeviceIDs(events)
+T<-nrow(unique(events[,1]))
+coverarea <- readCells(system.file(path_root, 'AntennaCells_MNO1.csv', package = 'deduplication'))
+antennaNeigh <- antennaNeighbours(coverarea)
+P1a <- aprioriDuplicityProb(simParams$prob_sec_mobile_phone, length(devices))
+pairs4dup<-computePairs(connections, length(devices), oneToOne = FALSE, antennaNeighbors = antennaNeigh)
+probDup3 <-computeDuplicityTrajectory(path=path_root, devices, gridParams, pairs4dup, P1 = P1a, T, gamma = 0.5)
+```
+
+The `computeDuplicityTrajectory` function uses a cluster of working nodes to parallelize the computations. As in the bayesian approach, the number of nodes equals the number of logical cores.
+The structure of the result is the same as in the previous examples: a table where we have the device IDs on the first column and the corresponding duplicity probability on the second column.
+
+## Computation of the duplicity probabilities made easy
+
+As one can notice, arriving at the final duplicity probability table involves several intermediate steps. In order to hide all these details from the user we provide the function `computeDuplicity` that is easier to use. Below we show an example of using this function.
+
+Firstly, we set the folder where the necessary input files are stored:
+```r
+path_root <- 'extdata'
+```
+
+Next, we set the grid file name, i.e. the file where the grid parameters are found:
+
+```r
+gridfile <- system.file(path_root, 'grid.csv', package = 'deduplication')
+```
+
+Then we set the events file name, i.e. the file with network events registered during a simulation:
+
+```r
+eventsfile <- system.file(path_root, 'AntennaInfo_MNO_MNO1.csv', package = 'deduplication')
+```
+
+We also need to set the signal file name, i.e. the file where the signal strength/quality for each tile in the grid is stored:
+
+```r
+signalfile<-system.file(path_root, 'SignalMeasure_MNO1.csv', package = 'deduplication')
+```
+
+The antenna cells file is needed to build the list of neighboring antennas. This file is needed only if the duplicity probabilities are computed using `pairs` or `trajectory` methods:
+
+```r
+antennacellsfile <- system.file(path_root, 'AntennaCells_MNO1.csv', package = 'deduplication')
+```
+
+Finally, we set the simulation file name, i.e. the file with the simulation parameters used to produce the data set:
+
+```r
+simulationfile<-system.file(path_root, 'simulation.xml', package = 'deduplication')
+```
+
+Now we can compute the duplicity probabilities using one of the three methods:
+
+1. Using the `pairs` method:
+```r
+out1<-computeDuplicity("pairs", gridFileName = gridfile, eventsFileName = eventsfile, signalFileName = signalfile, antennaCellsFileName = antennacellsfile, simulationFileName = simulationfile)
+```
+
+2. Using the `1to1` method:
+
+```r
+out2<-computeDuplicity("1to1", gridFileName = gridfile, eventsFileName = eventsfile, signalFileName = signalfile, simulatedData = TRUE, simulationFileName = simulationfile)
+```
+
+Using the `1to1` method with `lambda` parameter (note that the value given here is for conveninence):
+```r
+out2p<-computeDuplicity("1to1", gridFileName = gridfile, eventsFileName = eventsfile, signalFileName = signalfile, simulatedData = TRUE, simulationFileName = simulationfile, lambda = 0.67)
+```
+
+Using the `trajectory` method:
+```r
+out3<-computeDuplicity("trajectory", gridFileName = gridfile, eventsFileName = eventsfile, signalFileName = signalfile, antennaCellsFileName = antennacellsfile, simulationFileName = simulationfile, path= path_root)
+```
+
+
+## A note on building the HMM models
+
+The HMM models (both individual ones and the joint models) are build storing the steady state as fixed initialization by default. This is achieved by setting the default value of the `initSteady` parameter : `initSteady = TRUE`. 
+If a user wants to use some specific apriori probabilities this can be done as in the following sequence:
+
+```r
+aprioriProbModel <- matrix (1 / (gridParams$nrow * gridParams$ncol), nrow = gridParams$nrow, ncol = gridParams$ncol)
+model <- getGenericModel(gridParams$nrow, gridParams$ncol, emissionProbs, initSteady = FALSE, aprioriProb = aprioriProbModel)
+modelJ <- getJointModel(gridParams$nrow, gridParams$ncol, jointEmissionProbs, initSteady = FALSE, aprioriJointProb = aprioriProbModel)
+```
+
+## Some remarks about computational efficiency
+
+The most computational intensive functions of the package (`computeDuplicity`, `computeDuplicityBayesian` and `computeDuplicityTrajectory`) use parallel computations to decrease the execution time. Parallelization is done using the standard techniques found in the *parallel* package: first the above mentioned functions build a cluster of working nodes, exports the variables needed for computations to all nodes and then distribute the computations equally among these nodes.
+While executing the parallel code, all the logical cores of the computer are used. Even using these parallel computations techniques, the execution time could be high, depending on the size of the input data. The most demanding method from the execution time point of view is the `trajectory` method.
+
+# References

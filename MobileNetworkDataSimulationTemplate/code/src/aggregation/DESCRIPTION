@@ -1,0 +1,33 @@
+Package: aggregation
+Type: Package
+Title: R package for aggragtion of device numbers into population number
+Version: 0.1.1
+Author: Bogdan Oancea <bogdan.oancea@gmail.com>, David Salgado <david.salgado.fernandez@ine.es> Sandra Barragan <sandra.barragan.andres@ine.es>
+Maintainer: Bogdan Oancea <bogdan.oancea@gmail.com>
+Description: R package for aggregation
+License: GPL3, EUPL
+Imports: data.table,
+         deduplication,
+         Matrix,
+         doParallel,
+         parallel,
+         extraDistr
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Collate: 
+    'aggregation.R'
+    'buildCluster.R'
+    'buildPostLocJointProbs.R'
+    'rNnet_Event.R'
+    'doAggr.R'
+    'example.R'
+    'nIndividuals.R'
+    'nIndividuals3.R'
+    'rNnetEvent.R'
+    'rNnetJoint_Event.R'
+    'rNnetEventOD.R'

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Bogdan Oancea" />
+
+<meta name="date" content="2020-07-14" />
+
+<title>Introduction to deduplication package</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css" data-origin="pandoc">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Introduction to deduplication package</h1>
+<h4 class="author">Bogdan Oancea</h4>
+<h4 class="date">2020-07-14</h4>
+
+
+
+<p>This vignette contains a short introduction to <em>deduplication</em> package. It describes its main purpose, presents some technical details of its implementation and provide examples on how to use this package. Some basic knowledge about <em>destim</em> package would be useful to understand how this package works. A detailed description of the methodological approach implemented by this package can be found in <span class="citation">David Salgado, Luis Sanguiao, Sandra Barragan, Bogdan Oancea, Milena Suarez-Castillo (2019)</span> and in <span class="citation">David Salgado, Luis Sanguiao, Bogdan Oancea, Sandra Barragan, Marian Necula (2020)</span>. To fully understand the theory behind this package it is recommended to read the above mentioned papers.</p>
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p>This section contains a brief explanation about the intended use of the package and provides a short introduction to the underlaying methodology.</p>
+<div id="device-duplicity-problem" class="section level2">
+<h2>Device duplicity problem</h2>
+<p>The problem of device multiplicity comes from the fact that the statistical unit of analysis with mobile network data is the individual of a target population, not a mobile device. Since an individual can carry more than one device with him/her, this introduces the problem of multiple counting. For simplicity we make the simplifying assumption that each individual can carry at most <span class="math inline">\(2\)</span> devices.</p>
+<p>The main purpose of this package is to classify each device <span class="math inline">\(d\)</span> in a dataset as corresponding to an individual with only one device (1:1 correspondence between devices and individuals) or as corresponding to an individual with two devices (2:1 correspondence between devices and individuals). This classification will be probabilistic, thus assigning a probability <span class="math inline">\(p_{d}\)</span> of duplicity to each device <span class="math inline">\(d\)</span>.</p>
+<p>Two main methodological approaches are implemented by the <em>deduplication</em> package:</p>
+<ol style="list-style-type: decimal">
+<li>A Bayesian approach with network events data</li>
+<li>An approach based on the distance between centers of location probabilities</li>
+</ol>
+</div>
+<div id="the-bayesian-approach-based-on-network-events" class="section level2">
+<h2>The Bayesian approach based on network events</h2>
+<p>Denoting by <span class="math inline">\(D_{d_i d_j}\)</span> the event which has the meaning “devices <span class="math inline">\(d_i\)</span> and <span class="math inline">\(d_j\)</span> are carried by the same individual” and by<span class="math inline">\(D^c_{d_i d_j}\)</span> the event with the meaning “devices <span class="math inline">\(d_i\)</span> and <span class="math inline">\(d_j\)</span> are not carried by the same individual” the duplicity probability for device <span class="math inline">\(d_i\)</span> is the pair duplicity probability <span class="math inline">\(p_{d_id_j} \equiv \mathbb{P}(D_{d_i d_j}| \mathbf{E}, \mathbf{I})\)</span> corresponding to device <span class="math inline">\(d_j\)</span>more similar to <span class="math inline">\(d_i\)</span> and we can write <span class="math inline">\(p_{d_i}= \max_{d_j\neq d_i}\mathbb{P}\left(D_{d_id_j}|\mathbf{E}, \mathbf{I}\right)\)</span>. Obviously, <span class="math inline">\(p_{d_i d_i} = 0\)</span> for all <span class="math inline">\(i\)</span>.</p>
+<div id="the-pair-approach" class="section level3">
+<h3>The pair approach</h3>
+<p>We compute the pair-duplicity probabilities <span class="math inline">\(p_{d_{i}d_{j}}\)</span> for two devices <span class="math inline">\(d_{i}\)</span> and <span class="math inline">\(d_{j}\)</span> using the Bayes theorem:</p>
+<p><span class="math display">\[\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{E}, \mathbf{I}\right)=\frac{\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}^{c}\right)\mathbb{P}\left(D_{d_{i}d_{j}}^{c}| \mathbf{I}\right)}{\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}\right)\mathbb{P}\left(D_{d_{i}d_{j}}| \mathbf{I}\right) + \mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}^{c}\mathbf{I}\right)\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{I}\right)} =\frac{1}{1 + \frac{\mathbb{P}\left(D_{d_{i}d_{j}}|\mathbf{I}\right)}{\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{I}\right)}\times \frac{\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}, \mathbf{I}\right)}{\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}^{c}, \mathbf{I}\right)} }\]</span></p>
+<p>Here <span class="math inline">\(\mathbb{P}\left(D_{d_{i}d_{j}}|\mathbf{I}\right)\)</span> and <span class="math inline">\(\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{I}\right)\)</span> are the prior probabilities for the duplicity and non-duplicity events and</p>
+<p><span class="math inline">\(\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}, \mathbf{I}\right)\)</span> and <span class="math inline">\(\mathbb{P}\left(\mathbf{E}|D_{d_{i}d_{j}}^{c}, \mathbf{I}\right)\)</span> stands for the likelihoods under each hypothesis <span class="math inline">\(D_{d_{i}d_{j}}\)</span> and <span class="math inline">\(D_{d_{i}d_{j}}^{c}\)</span>, respectively.</p>
+<p>After some mathematical manipulations we arrive at the following formula:</p>
+<p><span class="math display">\[p_{d_{i}}=\max_{j\neq i}\left(\frac{1}{\left(1 + \alpha*\exp\left(\ell_{ij} - \ell_{i} -\ell_{j}\right)\right)}\right)\]</span>,</p>
+<p>where <span class="math inline">\(\alpha = \frac{P_2}{P_1}\)</span>, <span class="math inline">\(P_1\)</span> is the aprori probablity of duplicity for a device and <span class="math inline">\(P_2=1-P_1\)</span>.</p>
+</div>
+<div id="the-one-to-one-approach" class="section level3">
+<h3>The one-to-one approach</h3>
+<p>If we start from <span class="math inline">\(p_{d_i} = \mathbb{P}\left( D_{d_i d_i} | \mathbf{E}, \mathbf{I} \right)\)</span> and take into consideration that the entire event set <span class="math inline">\(\Omega_{d_i}\)</span> for device <span class="math inline">\(d_i\)</span> can be decomposed as <span class="math inline">\(\Omega_{d_i} = \cup_{d_j} D_{d_i d_j}\)</span> we can apply again the Bayes theorem and obtain:</p>
+<p><span class="math display">\[p_{d_i} = 1 - \frac{1}{1 + \alpha_{d_id_j} \times \sum_{j\neq i} \exp\ (\ell_i + \ell_j - \ell_{ij}) }\]</span></p>
+<p>where <span class="math inline">\(\ell_i\)</span> and <span class="math inline">\(\ell_j\)</span> are loglikelihoods for single a device (<span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span> in this case), <span class="math inline">\(\ell_{ij}\)</span> is the loglikelihood for two the devices <span class="math inline">\(d_i\)</span> and <span class="math inline">\(d_j\)</span> and <span class="math inline">\(\alpha = \frac{1-P_1}{P_1}\)</span>, <span class="math inline">\(P_1\)</span> is the apriori probability of 1:1 correspondence for all devices.</p>
+<p>In both approaches, the likelihood for two devices <span class="math inline">\(\ell_{ij}\)</span> is computed using a similar HMM model as for one device with the difference in the emission model: the emission probabilitiea are computed as as the product of the original single-device emission probabilities for <span class="math inline">\(d_i\)</span> and <span class="math inline">\(d_j\)</span>.</p>
+<p>If we denote <span class="math inline">\(\lambda^{(1)}_{d_i} = \frac{\mathbb{P}\left(D_{d_i d_i}|\mathbf{I}\right)}{1-\mathbb{P}\left(D_{d_i d_j}|\mathbf{I}\right)}\)</span> the prior odds ratio which gives how much more probable is that an individual carries a priori only one device <span class="math inline">\(d_i\)</span> than another device together with <span class="math inline">\(d_i\)</span>, considering that apriori any other device <span class="math inline">\(d_j\)</span> can be the second device so that <span class="math inline">\(\mathbb{P}\left( D_{d_i d_j}|\mathbf{I} \right)\)</span> is constant for any other device <span class="math inline">\(d_j\)</span> and <span class="math inline">\(\mathbb{P}\left( D_{d_id_i} | \mathbf{I} \right) + (N_D-1)* \mathbb{P}\left( D_{d_id_j} | \mathbf{I} \right) =1\)</span>, where <span class="math inline">\(N_D\)</span> is the total number of devices, we arrive at the following formula for the probability of duplicity:</p>
+<p><span class="math display">\[p_{d_i}= 1 - \frac{1}{1+\frac{\exp\left(-\ell_{d_i}\right)}{\lambda_{d_i} \times \left(N_D-1\right)} \sum_{j \neq i} \exp\left(\ell_{d_i d_j}\right)}\]</span></p>
+<p>Thus, depending on the available information, if there is information at the device level that can be used to evaluate <span class="math inline">\(\lambda_{d_i}\)</span>, the latter formula can be used to compute the duplicity probability, otherwise, the former formula with a single value of <span class="math inline">\(\alpha\)</span> for all devices is used.</p>
+</div>
+</div>
+<div id="the-trajectory-approach" class="section level2">
+<h2>The trajectory approach</h2>
+<p>This approach also follows a Bayesian approach, but instead of using network event variables <span class="math inline">\(\mathbf{E}\)</span> we will use properties of the trajectories derived from the HMMs, i.e. the location probability distributions <span class="math inline">\(\{\gamma_{d_{ti}}\}\)</span> of all devices <span class="math inline">\(d\)</span>.</p>
+<p>Applying the Bayes theorem again we have:</p>
+<p><span class="math display">\[\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{X}, \mathbf{I}\right) = \frac{1}{1 + \frac{\mathbb{P}\left(D_{d_{i}d_{j}}|\mathbf{I}\right)}{\mathbb{P}\left(D_{d_{i}d_{j}}^{c}|\mathbf{I}\right)}\times    \frac{\mathbb{P}\left(\mathbf{X}|D_{d_{i}d_{j}}, \mathbf{I}\right)}{\mathbb{P}\left(\mathbf{X}|D_{d_{i}d_{j}}^{c}, \mathbf{I}\right)} }\]</span>,</p>
+<p>where <span class="math inline">\(\mathbf{X}\)</span> is a variable related to the estimated trajectories in terms of posterior location probabilities.</p>
+<p>To apply this idea we compute the probability distribution of the signed distance between the x- and y-axis position of each pair of devices (we denote these random variables by <span class="math inline">\(\Delta_{x, d_i d_j t} = X_{d_i t} - X_{d_j t}\)</span> and <span class="math inline">\(\Delta_{y, d_i d_j t} = Y_{d_i t} - Y_{d_j t}\)</span>) and count how many times the mode of these distributions are less than a predefined quantity (<span class="math inline">\(\gamma \times \max\left( r_{d_i t}, r_{d_j t} \right)\)</span>. If a device <span class="math inline">\(d_{i}\)</span> corresponds to an individual with two devices (2:1), there will be another device <span class="math inline">\(d_{j}\)</span> such that their distance will be significatively close to <span class="math inline">\(0\)</span> along their trajectories.</p>
+<p>We define:</p>
+<p><span class="math display">\[\hat{p}_{d_{i}d_{j}}^{\textrm{mode}}\equiv\mathbb{P}\left(\mathbf{X}|D_{d_{i}d_{j}}, \mathbf{I}\right) = \frac{\#\{t=1,\dots, T:|\delta_{xt}^{*}|\leq \xi\cdot\max\{rd_{d_{i}t}, rd_{d_{j}t}\}, |\delta_{yt}^{*}|\leq \xi\cdot\max\{rd_{d_{i}t}, rd_{d_{j}t}\}\}}{T}\]</span>,</p>
+<p>where <span class="math inline">\(\delta_{xt}^{*}\)</span> and <span class="math inline">\(\delta_{yt}^{*}\)</span> are the mode of the <span class="math inline">\(\Delta_{x, d_i d_j t}\)</span> and <span class="math inline">\(\Delta_{y, d_i d_j t}\)</span> variables. The duplicity probability will be given by:</p>
+<p><span class="math display">\[p_{d_{i}} = \max_{j\neq i}\left(1 - \frac{1}{1 + \alpha\times \frac{\hat{p}_{d_{i}d_{j}}^{\textrm{mode}}}{1 - \hat{p}_{d_{i}d_{j}}^{\textrm{mode}}}}\right)\]</span></p>
+<p>where <span class="math inline">\(\alpha = \frac{P_1}{1-P_1}\)</span>, <span class="math inline">\(P_1\)</span> being the apriori probability of duplicity.</p>
+</div>
+</div>
+<div id="syntax-and-basic-usage" class="section level1">
+<h1>Syntax and basic usage</h1>
+<p>This section explains briefly the main functions of the package and how to use each method of computing the duplicity probability implemented in the <em>deduplication</em> package. In all the examples below we will use the data set included in this package. This data set was generated using the simulation software. The first step will be to set the path to the data:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" title="1"><span class="kw">library</span>(deduplication)</a>
+<a class="sourceLine" id="cb1-2" title="2">path_root &lt;-<span class="st"> &#39;extdata&#39;</span></a></code></pre></div>
+<div id="the-bayesian-approach-with-network-events---the-pairs-method" class="section level2">
+<h2>The Bayesian approach with network events - the pairs method</h2>
+<p>Firstly, we need a series of input parameters:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" title="1">gridParams &lt;-<span class="kw">readGridParams</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;grid.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a></code></pre></div>
+<p><code>gridParams</code> is a list that contains the number of rows and columns of the grid and the tile dimensions along OX and OY axes.</p>
+<p>Since we will wqork with simulated data in our example, we need some parameters that were used to generate the data set: the probability of a person to have two mobile devices (needed for the apriori duplicity probability) and the minimum value of the signal strength/quality to allow a connection between a mobile device and an antenna. These two values are read from the <code>simulation.xml</code> file:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" title="1">simParams &lt;-<span class="kw">readSimulationParams</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;simulation.xml&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a></code></pre></div>
+<p>We also need to read the network events:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" title="1">events &lt;-<span class="st"> </span><span class="kw">readEvents</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;AntennaInfo_MNO_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a></code></pre></div>
+<p>From the <code>events</code> table we can easily build a list of devices present in the current data set and a table with the antenna IDs where these devices are connected for every time instant:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" title="1">devices &lt;-<span class="st"> </span><span class="kw">getDeviceIDs</span>(events)</a>
+<a class="sourceLine" id="cb5-2" title="2">connections &lt;-<span class="st"> </span><span class="kw">getConnections</span>(events)</a></code></pre></div>
+<p><code>devices</code> is a (sorted) list of the IDs of all devices detected by the network and <code>connections</code> is a matrix with each row corresponding to a device and the elements on the columns corresponding to the IDs of the antenna where the device is connected at a every time instant.</p>
+<p>The next step will be the computation of the emission probabilities for the individual HMM models (for each device) and for the joint models (for pairs of devices). Since the emission probabilities are computed for each tile in the grid we need the number of rows and columns of the grid and also the file with the signal strength/quality. We also need the minimum value of the signal strength/quality that allows a connection between a mobile device and an antenna and we’ll use it to set to 0 the signal strength/quality for each tile where the actual value is below this threshold.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" title="1">emissionProbs &lt;-<span class="st"> </span><span class="kw">getEmissionProbs</span>(gridParams<span class="op">$</span>nrow, gridParams<span class="op">$</span>ncol, <span class="kw">system.file</span>(path_root, <span class="st">&#39;SignalMeasure_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>), simParams<span class="op">$</span>conn_threshold)</a>
+<a class="sourceLine" id="cb6-2" title="2"></a>
+<a class="sourceLine" id="cb6-3" title="3">jointEmissionProbs &lt;-<span class="st"> </span><span class="kw">getEmissionProbsJointModel</span>(emissionProbs)</a></code></pre></div>
+<p>Using the emission probablities we can build the generic HMM model (for each individual device) and the joint HMM model (for pairs of devices):</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">model &lt;-<span class="st"> </span><span class="kw">getGenericModel</span>(gridParams<span class="op">$</span>nrow, gridParams<span class="op">$</span>ncol, emissionProbs)</a>
+<a class="sourceLine" id="cb7-2" title="2">modelJ &lt;-<span class="st"> </span><span class="kw">getJointModel</span>(gridParams<span class="op">$</span>nrow, gridParams<span class="op">$</span>ncol, jointEmissionProbs)</a></code></pre></div>
+<p>We can fit now the individual models:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" title="1">ll &lt;-<span class="st"> </span><span class="kw">fitModels</span>(<span class="kw">length</span>(devices), model, connections)</a></code></pre></div>
+<p><code>fitModels</code> calls the <code>fit</code> function from <em>destim</em> package to do this task. Being a time consuming operation, it builds a cluster of working nodes and spreads the computations for subsets of devices to these nodes. Th number of working nodes equals the number of logical cores of the computer. On Windows the cluster is a <strong>SOCK</strong> one while on Unix-like operating systems (Linux and MacOS) it is a <strong>FORK</strong> cluster, taking advantage of its higher speed.</p>
+<p>The <code>pairs</code> method needs to receive a list of pairs of devices and the corresponding antennas where they are connected at every time instant. This list depends on the number of devices and could be very large which means a long execution time. To shorten the execution time we can exclude from the list of pairs the devices that are impossible to belong to the same person. For this, we first build a list of neighbouring antennas, considering that two antennas are neighbours if their coverage areas (cells) have a non void intersection. Then, this list will be used to retain only those devices connected to neighboring antennas most of the time.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" title="1">coverarea &lt;-<span class="st"> </span><span class="kw">readCells</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;AntennaCells_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a>
+<a class="sourceLine" id="cb9-2" title="2">antennaNeigh &lt;-<span class="st"> </span><span class="kw">antennaNeighbours</span>(coverarea)</a></code></pre></div>
+<p>The apriori probability of duplicity is simply given by:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" title="1">P1 &lt;-<span class="st"> </span><span class="kw">aprioriDuplicityProb</span>(simParams<span class="op">$</span>prob_sec_mobile_phone, <span class="kw">length</span>(devices))</a></code></pre></div>
+<p>We can build now the pairs of devices needed to compute the duplicity probabilities:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" title="1">pairs4dup&lt;-<span class="kw">computePairs</span>(connections, <span class="kw">length</span>(devices), <span class="dt">oneToOne =</span> <span class="ot">FALSE</span>, <span class="dt">P1 =</span> P1, <span class="dt">limit =</span> <span class="fl">0.05</span>, <span class="dt">antennaNeighbors =</span> antennaNeigh)</a></code></pre></div>
+<p>Note that we set <code>oneToOne = FALSE</code> to build the <em>reduced</em> list of pairs of devices that takes into consideration the exclusion criterion mentioned above.</p>
+<p>The duplicity probability for each devices is now computed as:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" title="1">probDup &lt;-<span class="st"> </span><span class="kw">computeDuplicityBayesian</span>(<span class="st">&quot;pairs&quot;</span>, devices, pairs4dup, modelJ, ll, P1)</a></code></pre></div>
+<p><code>probDup</code> is a table where on the first columns we have the device ID and on the second column we have the corresponding duplicity probability.</p>
+</div>
+<div id="the-bayesian-approach-with-network-events---the-1-to-1-method" class="section level2">
+<h2>The Bayesian approach with network events - the 1-to-1 method</h2>
+<p>This method needs a complete list of pairs of devices and it also uses as an input parameter the apriori probability for 1-to-1 correspondence between devices and owners. We repeat here the sequence of the first ten instructions which are the same as in the preceding example:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb13-1" title="1">gridParams &lt;-<span class="kw">readGridParams</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;grid.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a>
+<a class="sourceLine" id="cb13-2" title="2">simParams &lt;-<span class="kw">readSimulationParams</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;simulation.xml&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a>
+<a class="sourceLine" id="cb13-3" title="3">events &lt;-<span class="st"> </span><span class="kw">readEvents</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;AntennaInfo_MNO_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a>
+<a class="sourceLine" id="cb13-4" title="4">devices &lt;-<span class="st"> </span><span class="kw">getDeviceIDs</span>(events)</a>
+<a class="sourceLine" id="cb13-5" title="5">connections &lt;-<span class="st"> </span><span class="kw">getConnections</span>(events)</a>
+<a class="sourceLine" id="cb13-6" title="6">emissionProbs &lt;-<span class="st"> </span><span class="kw">getEmissionProbs</span>(gridParams<span class="op">$</span>nrow, gridParams<span class="op">$</span>ncol, <span class="kw">system.file</span>(path_root, <span class="st">&#39;SignalMeasure_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>), simParams<span class="op">$</span>conn_threshold)</a>
+<a class="sourceLine" id="cb13-7" title="7">jointEmissionProbs &lt;-<span class="st"> </span><span class="kw">getEmissionProbsJointModel</span>(emissionProbs)</a>
+<a class="sourceLine" id="cb13-8" title="8">model &lt;-<span class="st"> </span><span class="kw">getGenericModel</span>(gridParams<span class="op">$</span>nrow, gridParams<span class="op">$</span>ncol, emissionProbs)</a>
+<a class="sourceLine" id="cb13-9" title="9">modelJ &lt;-<span class="st"> </span><span class="kw">getJointModel</span>(gridParams<span class="op">$</span>nrow, gridParams<span class="op">$</span>ncol, jointEmissionProbs)</a>
+<a class="sourceLine" id="cb13-10" title="10">ll &lt;-<span class="st"> </span><span class="kw">fitModels</span>(<span class="kw">length</span>(devices), model, connections)</a></code></pre></div>
+<p>Now, we compute the apriori probability for 1-to-1 correspondence and build the pairs of devices:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb14-1" title="1">Pii &lt;-<span class="st"> </span><span class="kw">aprioriOneDeviceProb</span>(simParams<span class="op">$</span>prob_sec_mobile_phone, <span class="kw">length</span>(devices))</a>
+<a class="sourceLine" id="cb14-2" title="2">pairs4dup&lt;-<span class="kw">computePairs</span>(connections, <span class="kw">length</span>(devices), <span class="dt">oneToOne =</span> <span class="ot">TRUE</span>)</a></code></pre></div>
+<p>Finally, we call the <code>computeDuplicityBayesian</code> function:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb15-1" title="1">probDup2 &lt;-<span class="st"> </span><span class="kw">computeDuplicityBayesian</span>(<span class="st">&quot;1to1&quot;</span>, devices, pairs4dup, modelJ, ll, <span class="dt">P1 =</span> <span class="ot">NULL</span>, <span class="dt">Pii=</span>Pii)</a></code></pre></div>
+<p>which gives the table with duplicity probability for each device.</p>
+<p>If we have the value of the <code>lambda</code> parameter for each device (or a single value for all devices) we can call the same function but instead of providing the apriori probability for 1-to-1 correspondence, we can provide the value of <code>lambda</code> (the value given here is only for convenience):</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1">probDup3 &lt;-<span class="st"> </span><span class="kw">computeDuplicityBayesian</span>(method, devices, pairs4dup, modelJ, ll, <span class="dt">P1 =</span> <span class="ot">NULL</span>, <span class="dt">Pii =</span> <span class="ot">NULL</span>, <span class="dt">init =</span> <span class="ot">TRUE</span>, <span class="dt">lambda =</span> <span class="fl">0.67</span>)</a></code></pre></div>
+</div>
+<div id="the-trajectory-approach-1" class="section level2">
+<h2>The trajectory approach</h2>
+<p>The trajectory method needs a path to the files with the posterior location probabilities. These files should have the following name convention: <code>postLocDevice_</code> + <em>deviceID</em> + <code>.csv</code>. The files with the posterior location probabilities are obtained with the <em>destim</em> package. We provide all the files needed to run this example.</p>
+<p>Below is the sequence of instructions to compute the duplicity probabilities using the trajectory method. We need to read the network events file only to obtain the list of devices and sequence of time instants. If they are available separately they can be provided without the need of the events file. To shorten the execution time we’ve made use of the same technique to reduce the number of the pairs of devices as in the first example (the <code>pairs</code> method).</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1">gridParams &lt;-<span class="kw">readGridParams</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;grid.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a>
+<a class="sourceLine" id="cb17-2" title="2">events &lt;-<span class="st"> </span><span class="kw">readEvents</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;AntennaInfo_MNO_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a>
+<a class="sourceLine" id="cb17-3" title="3">devices &lt;-<span class="st"> </span><span class="kw">getDeviceIDs</span>(events)</a>
+<a class="sourceLine" id="cb17-4" title="4">T&lt;-<span class="kw">nrow</span>(<span class="kw">unique</span>(events[,<span class="dv">1</span>]))</a>
+<a class="sourceLine" id="cb17-5" title="5">coverarea &lt;-<span class="st"> </span><span class="kw">readCells</span>(<span class="kw">system.file</span>(path_root, <span class="st">&#39;AntennaCells_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>))</a>
+<a class="sourceLine" id="cb17-6" title="6">antennaNeigh &lt;-<span class="st"> </span><span class="kw">antennaNeighbours</span>(coverarea)</a>
+<a class="sourceLine" id="cb17-7" title="7">P1a &lt;-<span class="st"> </span><span class="kw">aprioriDuplicityProb</span>(simParams<span class="op">$</span>prob_sec_mobile_phone, <span class="kw">length</span>(devices))</a>
+<a class="sourceLine" id="cb17-8" title="8">pairs4dup&lt;-<span class="kw">computePairs</span>(connections, <span class="kw">length</span>(devices), <span class="dt">oneToOne =</span> <span class="ot">FALSE</span>, <span class="dt">antennaNeighbors =</span> antennaNeigh)</a>
+<a class="sourceLine" id="cb17-9" title="9">probDup3 &lt;-<span class="kw">computeDuplicityTrajectory</span>(<span class="dt">path=</span>path_root, devices, gridParams, pairs4dup, <span class="dt">P1 =</span> P1a, T, <span class="dt">gamma =</span> <span class="fl">0.5</span>)</a></code></pre></div>
+<p>The <code>computeDuplicityTrajectory</code> function uses a cluster of working nodes to parallelize the computations. As in the bayesian approach, the number of nodes equals the number of logical cores. The structure of the result is the same as in the previous examples: a table where we have the device IDs on the first column and the corresponding duplicity probability on the second column.</p>
+</div>
+<div id="computation-of-the-duplicity-probabilities-made-easy" class="section level2">
+<h2>Computation of the duplicity probabilities made easy</h2>
+<p>As one can notice, arriving at the final duplicity probability table involves several intermediate steps. In order to hide all these details from the user we provide the function <code>computeDuplicity</code> that is easier to use. Below we show an example of using this function.</p>
+<p>Firstly, we set the folder where the necessary input files are stored:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" title="1">path_root &lt;-<span class="st"> &#39;extdata&#39;</span></a></code></pre></div>
+<p>Next, we set the grid file name, i.e. the file where the grid parameters are found:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1">gridfile &lt;-<span class="st"> </span><span class="kw">system.file</span>(path_root, <span class="st">&#39;grid.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>)</a></code></pre></div>
+<p>Then we set the events file name, i.e. the file with network events registered during a simulation:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb20-1" title="1">eventsfile &lt;-<span class="st"> </span><span class="kw">system.file</span>(path_root, <span class="st">&#39;AntennaInfo_MNO_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>)</a></code></pre></div>
+<p>We also need to set the signal file name, i.e. the file where the signal strength/quality for each tile in the grid is stored:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1">signalfile&lt;-<span class="kw">system.file</span>(path_root, <span class="st">&#39;SignalMeasure_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>)</a></code></pre></div>
+<p>The antenna cells file is needed to build the list of neighboring antennas. This file is needed only if the duplicity probabilities are computed using <code>pairs</code> or <code>trajectory</code> methods:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" title="1">antennacellsfile &lt;-<span class="st"> </span><span class="kw">system.file</span>(path_root, <span class="st">&#39;AntennaCells_MNO1.csv&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>)</a></code></pre></div>
+<p>Finally, we set the simulation file name, i.e. the file with the simulation parameters used to produce the data set:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb23-1" title="1">simulationfile&lt;-<span class="kw">system.file</span>(path_root, <span class="st">&#39;simulation.xml&#39;</span>, <span class="dt">package =</span> <span class="st">&#39;deduplication&#39;</span>)</a></code></pre></div>
+<p>Now we can compute the duplicity probabilities using one of the three methods:</p>
+<ol style="list-style-type: decimal">
+<li>Using the <code>pairs</code> method:</li>
+</ol>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb24-1" title="1">out1&lt;-<span class="kw">computeDuplicity</span>(<span class="st">&quot;pairs&quot;</span>, <span class="dt">gridFileName =</span> gridfile, <span class="dt">eventsFileName =</span> eventsfile, <span class="dt">signalFileName =</span> signalfile, <span class="dt">antennaCellsFileName =</span> antennacellsfile, <span class="dt">simulationFileName =</span> simulationfile)</a></code></pre></div>
+<ol start="2" style="list-style-type: decimal">
+<li>Using the <code>1to1</code> method:</li>
+</ol>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb25-1" title="1">out2&lt;-<span class="kw">computeDuplicity</span>(<span class="st">&quot;1to1&quot;</span>, <span class="dt">gridFileName =</span> gridfile, <span class="dt">eventsFileName =</span> eventsfile, <span class="dt">signalFileName =</span> signalfile, <span class="dt">simulatedData =</span> <span class="ot">TRUE</span>, <span class="dt">simulationFileName =</span> simulationfile)</a></code></pre></div>
+<p>Using the <code>1to1</code> method with <code>lambda</code> parameter (note that the value given here is for conveninence):</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb26-1" title="1">out2p&lt;-<span class="kw">computeDuplicity</span>(<span class="st">&quot;1to1&quot;</span>, <span class="dt">gridFileName =</span> gridfile, <span class="dt">eventsFileName =</span> eventsfile, <span class="dt">signalFileName =</span> signalfile, <span class="dt">simulatedData =</span> <span class="ot">TRUE</span>, <span class="dt">simulationFileName =</span> simulationfile, <span class="dt">lambda =</span> <span class="fl">0.67</span>)</a></code></pre></div>
+<p>Using the <code>trajectory</code> method:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb27-1" title="1">out3&lt;-<span class="kw">computeDuplicity</span>(<span class="st">&quot;trajectory&quot;</span>, <span class="dt">gridFileName =</span> gridfile, <span class="dt">eventsFileName =</span> eventsfile, <span class="dt">signalFileName =</span> signalfile, <span class="dt">antennaCellsFileName =</span> antennacellsfile, <span class="dt">simulationFileName =</span> simulationfile, <span class="dt">path=</span> path_root)</a></code></pre></div>
+</div>
+<div id="a-note-on-building-the-hmm-models" class="section level2">
+<h2>A note on building the HMM models</h2>
+<p>The HMM models (both individual ones and the joint models) are build storing the steady state as fixed initialization by default. This is achieved by setting the default value of the <code>initSteady</code> parameter : <code>initSteady = TRUE</code>. If a user wants to use some specific apriori probabilities this can be done as in the following sequence:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb28-1" title="1">aprioriProbModel &lt;-<span class="st"> </span><span class="kw">matrix</span> (<span class="dv">1</span> <span class="op">/</span><span class="st"> </span>(gridParams<span class="op">$</span>nrow <span class="op">*</span><span class="st"> </span>gridParams<span class="op">$</span>ncol), <span class="dt">nrow =</span> gridParams<span class="op">$</span>nrow, <span class="dt">ncol =</span> gridParams<span class="op">$</span>ncol)</a>
+<a class="sourceLine" id="cb28-2" title="2">model &lt;-<span class="st"> </span><span class="kw">getGenericModel</span>(gridParams<span class="op">$</span>nrow, gridParams<span class="op">$</span>ncol, emissionProbs, <span class="dt">initSteady =</span> <span class="ot">FALSE</span>, <span class="dt">aprioriProb =</span> aprioriProbModel)</a>
+<a class="sourceLine" id="cb28-3" title="3">modelJ &lt;-<span class="st"> </span><span class="kw">getJointModel</span>(gridParams<span class="op">$</span>nrow, gridParams<span class="op">$</span>ncol, jointEmissionProbs, <span class="dt">initSteady =</span> <span class="ot">FALSE</span>, <span class="dt">aprioriJointProb =</span> aprioriProbModel)</a></code></pre></div>
+</div>
+<div id="some-remarks-about-computational-efficiency" class="section level2">
+<h2>Some remarks about computational efficiency</h2>
+<p>The most computational intensive functions of the package (<code>computeDuplicity</code>, <code>computeDuplicityBayesian</code> and <code>computeDuplicityTrajectory</code>) use parallel computations to decrease the execution time. Parallelization is done using the standard techniques found in the <em>parallel</em> package: first the above mentioned functions build a cluster of working nodes, exports the variables needed for computations to all nodes and then distribute the computations equally among these nodes. While executing the parallel code, all the logical cores of the computer are used. Even using these parallel computations techniques, the execution time could be high, depending on the size of the input data. The most demanding method from the execution time point of view is the <code>trajectory</code> method.</p>
+</div>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-bmc_paper">
+<p>David Salgado, Luis Sanguiao, Bogdan Oancea, Sandra Barragan, Marian Necula. 2020. “An End-to-End Statistical Process with Mobile Network Data for Official Statistics.” In <em>Big Data Meets Survey Science (Bigsurv20), November 2020</em>.</p>
+</div>
+<div id="ref-WP5Deliverable1.3">
+<p>David Salgado, Luis Sanguiao, Sandra Barragan, Bogdan Oancea, Milena Suarez-Castillo. 2019. “A Proposed Production Framework with Mobile Network Data - Deliverable I.3 (Methodology).”</p>
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

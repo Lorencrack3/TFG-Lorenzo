@@ -1,0 +1,3 @@
+cd C:/Users/loren/Desktop/simulator
+
+Release/simulator.exe -m data/dataset5/map.wkt -p data/dataset5/persons.xml -a data/dataset5/antennas.xml -s data/dataset5/simulation.xml -o 

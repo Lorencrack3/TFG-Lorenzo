@@ -1,0 +1,231 @@
+---
+title: "Introduction to aggregation package"
+author: "Bogdan Oancea"
+date: "2020-07-28"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib  
+---
+
+
+
+This vignette contains a short introduction to *aggregation* package. It describes its main purpose, presents some technical details of its implementation and provide examples on how to use this package. Some basic knowledge about *destim* and *deduplication* packages would be useful to understand how this package works. A detailed description of the methodological approach implemented by this package can be found in @WP5Deliverable1.3 and in @bmc_paper. To fully understand the theory behind this package it is recommended to read the above mentioned papers.
+
+
+# Introduction
+This section contains a brief explanation about the intended use of the package and provides a short introduction to the underlaying methodology.
+
+## The number of detected individuals problem
+The main obective of this package is to estimate the number of detected individuals starting from the number of detecting devices and making use of the duplicity probability for each device.
+
+For this purpose, it uses a probabilistic approach in order to carry forward the uncertainty already present in the preceding stages all along the end-to-end process. The geolocation of network events is conducted with certain degree of uncertainty (due to the nature itself of the process, see \code{destim}) and the duplicity of a given device (carried by an
+individual with another device) is also probabilistic in nature (see \code{deduplication}), therefore, apriori it is impossible to provide a certain number of individuals in a given territorial unit.
+
+For this reason the methodology nehind this package focuses on the probability distribution of the number of individuals detected by the network. Having a probability distribution amounts to having all statistical information about the random phenomenon and one can choose any point estimation (mean, median, mode) togehter with uncertainty measures (coefficient of variation, credible intervals).
+
+The aggregation procedure is strongly based on the results of preceding modules (geolocation and duplicity) avoiding any extra hypothesis. 
+
+
+## The number of detected individuals.
+
+We define the vectors $\mathbf{e}^{(1)}_{i}=\mathbf{e}_{i}$ and $\mathbf{e}^{(2)}_{i}=\frac{1}{2}\times\mathbf{e}_{i}$, where $\mathbf{e}_{i}$ is the canonical unit vector in $\mathbb{R}^{N_{T}}$ (with $N_{T}$ the number of tiles in the reference grid).
+
+Next, we define the random variable $\mathbf{T}_{dt}\in\{\mathbf{e}_{i}^{(1)}, \mathbf{e}_{i}^{(2)}\}_{i=1,\dots,N_{T}}$ with probability mass function $\mathbb{P}\left(\mathbf{T}_{dt}|\mathbf{E}_{1:D}\right)$ given by
+
+$$\mathbb{P}\left(\mathbf{T}_{dt}=\mathbf{e}_{i}^{(1)}|\mathbf{E}_{1:D}\right) = \gamma_{dti}\times (1 - p_{d})$$
+$$\mathbb{P}\left(\mathbf{T}_{dt}=\mathbf{e}_{i}^{(2)}|\mathbf{E}_{1:D}\right) = \gamma_{dti}\times p_{d}$$
+where $p_{d}$ is the device duplicity  probability computeds with *deduplication* package and $\gamma_{dti}$ denote the location probability of device $d$ at time $t$ and tile $i$ computed with *destim* package. It can be easily observed that this is a this is a categorical or multinoulli random variable.
+
+Finally, we define the multivariate random variable $\mathbf{N}^{\textrm{net}}_{t}$ providing the number of individuals $N_{ti}^{\textrm{net}}$ detected by the network at each tile $i=1,\dots,N_{T}$ at time instant $t$:
+
+$$
+\mathbf{N}^{\textrm{net}}_{t}=\sum_{d=1}^{D}\mathbf{T}_{dt}.
+$$
+
+The random variable $\mathbf{N}^{(\textrm{net})}_{t}$ is a Poisson multinomial distributed random variable. The properties and software implementation of this distribution are not trivial and we use a Monte Carlo simulation method by convolution to generate random variates according to this distribution.
+
+
+## The *rNnetEvent()* function.
+
+
+The *aggregation* package provides a single function to generate random variates according to the Poisson multinomial distribution: *rNnetEvent()*. Thus, all the details about intermediate computations are hidden from the users. The input data needed by this function are: the number of the random values to be generated, the file with the duplicity probabilities for each device, the file defining the geographical regions where we intend to aggregate the number of individuals, the path to the directory where the files with the posterior location probabilities for each device are found,
+the name prefix of these files and optionally a vector with the values of time instants. If this optional vector is not provided, the result will be indexed by $1 ... T$ where $T$ is the number of time steps. We provide a complete set of files with example data in the *extdata* folder of this package. The raw data used to produce these files are given by our simulation software.
+
+The duplicity file is a simple .csv file which is the main result of the *deduplication* package. It is a simple table with two columns: deviceID and duplicityProbability:
+
+
+```r
+dupProb <- read.csv(file = system.file('extdata/duplicity.csv', package = 'aggregation'))
+head(dupProb)
+#>   deviceID       dupP
+#> 1       73 0.00000000
+#> 2       78 1.00000000
+#> 3       79 1.00000000
+#> 4       83 0.05141439
+#> 5       85 0.00000000
+#> 6       90 0.06842542
+```
+
+The regions file is also a simple .csv file defined by the user. It contains two columns: the tile number and the region number. Normally, all tiles in the grid should by part of a region.
+
+
+```r
+regions <- read.csv(file = system.file('extdata/regions.csv', package = 'aggregation'))
+head(regions)
+#>   tile region
+#> 1 1560      3
+#> 2 1561      3
+#> 3 1562      3
+#> 4 1563      3
+#> 5 1564      3
+#> 6 1565      3
+```
+
+The third parameter that should be passed to this function is the path where the the files with the posterior location probabilities are found. There should be one file for each device in the whole wet of devices. A file contains a matrix with the posterior location probabilities for a device: the number of rows equals the number of tiles in the grid and the number of columns equals the number of time instants. The name of each file is composed by a concatenation of a prefix (passed  as a parameter) and the character "_" folowe by the device ID. The file extension is .csv.
+
+Below we show a simple example how to use this function and its result.
+
+
+```r
+# set the folder where the necessary input files are stored
+path      <- 'extdata'
+
+prefix = 'postLocDevice'
+
+# set the duplicity probabilities file name, i.e. the file with duplicity probability for each device
+dpFile <- system.file(path, 'duplicity.csv', package = 'aggregation')
+
+# set the regions file name, i.e. the file defining the regions for wich we need the estimation of the number
+# of individuals detected by network.
+rgFile <- system.file(path, 'regions.csv', package = 'aggregation')
+
+# set the path to the posterior location probabilities file
+pathLoc <- system.file(path, package = 'aggregation')
+
+# set the number of random values to be generated
+n <- 1e3
+# call rNnetEvent
+nNet <- rNnetEvent(n, dpFile, rgFile, pathLoc, prefix)
+
+head(nNet)
+```
+
+```
+   time region  N iter
+1:    1      1 11    1
+2:    1      1 11    2
+3:    1      1 10    3
+4:    1      1 13    4
+5:    1      1 10    5
+6:    1      1 12    6
+```
+The result nNet is a data.table object with 3 columns: time, region, N. For each distinct combination of time-region this table contains n randomly generated values. Onr can use the mean, mode or meadiqan to obtain an estimation of the number of individuals at each time instants in each region. Below is an example how to do this.
+
+
+```r
+# print the mean number of detected individuals for each region, for each time instant
+regions <- as.numeric(unique(nNet$region))
+times <- unique(nNet$time)
+
+for(r in regions) {
+    print(paste0("region: ", r))
+    for(t in times) {
+        print(paste0("time instant: ", t, " number of individuals: " , mean(nNet[region == r][time ==t]$N)))
+    }
+}
+```
+
+
+
+## The origin - destination matrix.
+
+Computing the number of detected individuals moving from region $i$ to region $j$ in the time interval $(t-1, 
+t)$ follows a similar approach. 
+
+First we define matrices $E_{ij}^{(1)}= E_{ij}$ and $E_{ij}^{(2)}=\frac{1}{2}\cdot E_{ij}$, where $E_{ij}$ are the Weyl matrices in $\mathbb{R}^{N_{T}}\times\mathbb{R}^{N_{T}}$. Next, we define the matrix random variable $E_{dt}\in\{E_{ij}^{(1)}, E_{ij}^{(2)}\}_{i,j=1\dots, N_{T}}$ with probability mass function given by
+
+$$\mathbb{P}\left(E_{dt}=E_{ij}^{(1)}\right)=\gamma_{d(j|i)t}\times (1-p_{d})$$,
+$$\mathbb{P}\left(E_{dt}=E_{ij}^{(2)}\right)=\gamma_{d(j|i)t}\times p_{d}$$,
+
+where $\gamma_{d(j|i)t}$ stands for the conditional location probability  $\gamma_{d(j|i)t}\equiv\frac{\gamma_{dji,t}}{\gamma_{dit-1}}$.
+
+The conditional probabilities are computed using aggregated probabilites at the level of regions:
+
+$$\bar{\gamma}_{d(i|j)t}=\sum_{s\in\mathcal{I}_{i}}\sum_{r\in\mathcal{I}_{j}}\gamma_{dt(s|r)}$$.
+
+We define the transition matrix of counts of individuals detected by the network by
+$$\mathbf{N}^{\textrm{(net)}}_{t}=\sum_{d=1}^{D}E_{dt}$$
+which is distributed according to a multinomial-Poisson distribution. We use again a Monte Carlo technique to generated random variates according to this distribution. 
+
+
+## The *rNnetEventOD()* function.
+
+Again, the *aggregation* package provieds a single function to generate random variates that can be used then to compute an estimation of the number of individuals moving from one region to another. The parameters of this function are: the number of the random values to be generated, the file with the duplicity probabilities for each device, the file defining the geographical regions where we intend to aggregate the number of individuals, the path to the directory where the files with the posterior joint location probabilities for each device are found and the name prefix of these files. The files contaning the joint probabilities are also a result of the *destim* package. We provide a complete set of files with example data in the *extdata* folder of this package. The raw data used to produce these files are given by our simulation software.
+
+
+```r
+# For the origin-destination matrix we proceed as follows
+# set the folder where the necessary input files are stored
+path      <- 'extdata'
+
+prefixJ <- 'postLocJointProbDevice'
+
+# set the duplicity probabilities file name, i.e. the file with duplicity probability for each device
+dpFile<-system.file(path, 'duplicity.csv', package = 'aggregation')
+
+# set the regions file name, i.e. the file defining the regions for wich we need the estimation of the number
+# of individuals detected by network.
+rgFile<-system.file(path, 'regions.csv', package = 'aggregation')
+
+# generate n random values
+n <- 1e3
+
+nnetOD <- rNnetEventOD(n, dpFile, rgFile, system.file(path, package = 'aggregation'), prefixJ))
+
+head(nnetOD)
+```
+
+```
+   time_from time_to region_from region_to Nnet iter
+1:         0      10           1         1 18.0    1
+2:         0      10           1         1 18.5    2
+3:         0      10           1         1 19.0    3
+4:         0      10           1         1 18.0    4
+5:         0      10           1         1 19.0    5
+6:         0      10           1         1 18.0    6
+```
+
+For each pair(time_from-time_to, region_from-region_to) there are *n* random values in the last but one column. One can use again the mean, mode or median to have an estimate of the number of individuals moving from one region to another at a certain time.
+
+The following code shows how to compute the the origin-destination matrix for the time interval (0,10).
+
+
+```r
+t_from <-0
+t_to <- 10
+
+
+regions_from <- sort(as.numeric(unique(nnetOD$region_from)))
+regions_to <- sort(as.numeric(unique(nnetOD$region_to)))
+
+
+ODmat <- matrix(nrow = length(regions_from), ncol = length(regions_to))
+for(r1 in regions_from) {
+    for(r2 in regions_to) {
+          ODmat[r1,r2] <- round(mean(nnetOD[time_from==t1][time_to==t2][region_from==r1][region_to==r2]$Nnet))
+    }
+}    
+ODmat
+```
+
+
+## Some remarks about computational efficiency
+
+The most computational intensive functions of the package (`rNnetEvent`, `rNnetEventOD`) use parallel computations to decrease the execution time. Parallelization is done using the standard techniques found in the *parallel* package: firstly, the above mentioned functions build a cluster of working nodes, exports the variables needed for computations to all nodes and then distribute the computations equally among these nodes.
+While executing the parallel code, all the logical cores of the computer are used. Even using these parallel computations techniques, the execution time could be high, depending on the size of the input data. 
+The cluster used for parallel computations is a SOCK one under the Windows operating system and a FORK one under Unix-like operating systems.
+
+# References

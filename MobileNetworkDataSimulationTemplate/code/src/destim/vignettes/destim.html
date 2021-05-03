@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>Location of devices</title>
+
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
+<!-- Styles for R syntax highlighter -->
+<style type="text/css">
+   pre .operator,
+   pre .paren {
+     color: rgb(104, 118, 135)
+   }
+
+   pre .literal {
+     color: #990073
+   }
+
+   pre .number {
+     color: #099;
+   }
+
+   pre .comment {
+     color: #998;
+     font-style: italic
+   }
+
+   pre .keyword {
+     color: #900;
+     font-weight: bold
+   }
+
+   pre .identifier {
+     color: rgb(0, 0, 0);
+   }
+
+   pre .string {
+     color: #d14;
+   }
+</style>
+
+<!-- R syntax highlighter -->
+<script type="text/javascript">
+var hljs=new function(){function m(p){return p.replace(/&/gm,"&amp;").replace(/</gm,"&lt;")}function f(r,q,p){return RegExp(q,"m"+(r.cI?"i":"")+(p?"g":""))}function b(r){for(var p=0;p<r.childNodes.length;p++){var q=r.childNodes[p];if(q.nodeName=="CODE"){return q}if(!(q.nodeType==3&&q.nodeValue.match(/\s+/))){break}}}function h(t,s){var p="";for(var r=0;r<t.childNodes.length;r++){if(t.childNodes[r].nodeType==3){var q=t.childNodes[r].nodeValue;if(s){q=q.replace(/\n/g,"")}p+=q}else{if(t.childNodes[r].nodeName=="BR"){p+="\n"}else{p+=h(t.childNodes[r])}}}if(/MSIE [678]/.test(navigator.userAgent)){p=p.replace(/\r/g,"\n")}return p}function a(s){var r=s.className.split(/\s+/);r=r.concat(s.parentNode.className.split(/\s+/));for(var q=0;q<r.length;q++){var p=r[q].replace(/^language-/,"");if(e[p]){return p}}}function c(q){var p=[];(function(s,t){for(var r=0;r<s.childNodes.length;r++){if(s.childNodes[r].nodeType==3){t+=s.childNodes[r].nodeValue.length}else{if(s.childNodes[r].nodeName=="BR"){t+=1}else{if(s.childNodes[r].nodeType==1){p.push({event:"start",offset:t,node:s.childNodes[r]});t=arguments.callee(s.childNodes[r],t);p.push({event:"stop",offset:t,node:s.childNodes[r]})}}}}return t})(q,0);return p}function k(y,w,x){var q=0;var z="";var s=[];function u(){if(y.length&&w.length){if(y[0].offset!=w[0].offset){return(y[0].offset<w[0].offset)?y:w}else{return w[0].event=="start"?y:w}}else{return y.length?y:w}}function t(D){var A="<"+D.nodeName.toLowerCase();for(var B=0;B<D.attributes.length;B++){var C=D.attributes[B];A+=" "+C.nodeName.toLowerCase();if(C.value!==undefined&&C.value!==false&&C.value!==null){A+='="'+m(C.value)+'"'}}return A+">"}while(y.length||w.length){var v=u().splice(0,1)[0];z+=m(x.substr(q,v.offset-q));q=v.offset;if(v.event=="start"){z+=t(v.node);s.push(v.node)}else{if(v.event=="stop"){var p,r=s.length;do{r--;p=s[r];z+=("</"+p.nodeName.toLowerCase()+">")}while(p!=v.node);s.splice(r,1);while(r<s.length){z+=t(s[r]);r++}}}}return z+m(x.substr(q))}function j(){function q(x,y,v){if(x.compiled){return}var u;var s=[];if(x.k){x.lR=f(y,x.l||hljs.IR,true);for(var w in x.k){if(!x.k.hasOwnProperty(w)){continue}if(x.k[w] instanceof Object){u=x.k[w]}else{u=x.k;w="keyword"}for(var r in u){if(!u.hasOwnProperty(r)){continue}x.k[r]=[w,u[r]];s.push(r)}}}if(!v){if(x.bWK){x.b="\\b("+s.join("|")+")\\s"}x.bR=f(y,x.b?x.b:"\\B|\\b");if(!x.e&&!x.eW){x.e="\\B|\\b"}if(x.e){x.eR=f(y,x.e)}}if(x.i){x.iR=f(y,x.i)}if(x.r===undefined){x.r=1}if(!x.c){x.c=[]}x.compiled=true;for(var t=0;t<x.c.length;t++){if(x.c[t]=="self"){x.c[t]=x}q(x.c[t],y,false)}if(x.starts){q(x.starts,y,false)}}for(var p in e){if(!e.hasOwnProperty(p)){continue}q(e[p].dM,e[p],true)}}function d(B,C){if(!j.called){j();j.called=true}function q(r,M){for(var L=0;L<M.c.length;L++){if((M.c[L].bR.exec(r)||[null])[0]==r){return M.c[L]}}}function v(L,r){if(D[L].e&&D[L].eR.test(r)){return 1}if(D[L].eW){var M=v(L-1,r);return M?M+1:0}return 0}function w(r,L){return L.i&&L.iR.test(r)}function K(N,O){var M=[];for(var L=0;L<N.c.length;L++){M.push(N.c[L].b)}var r=D.length-1;do{if(D[r].e){M.push(D[r].e)}r--}while(D[r+1].eW);if(N.i){M.push(N.i)}return f(O,M.join("|"),true)}function p(M,L){var N=D[D.length-1];if(!N.t){N.t=K(N,E)}N.t.lastIndex=L;var r=N.t.exec(M);return r?[M.substr(L,r.index-L),r[0],false]:[M.substr(L),"",true]}function z(N,r){var L=E.cI?r[0].toLowerCase():r[0];var M=N.k[L];if(M&&M instanceof Array){return M}return false}function F(L,P){L=m(L);if(!P.k){return L}var r="";var O=0;P.lR.lastIndex=0;var M=P.lR.exec(L);while(M){r+=L.substr(O,M.index-O);var N=z(P,M);if(N){x+=N[1];r+='<span class="'+N[0]+'">'+M[0]+"</span>"}else{r+=M[0]}O=P.lR.lastIndex;M=P.lR.exec(L)}return r+L.substr(O,L.length-O)}function J(L,M){if(M.sL&&e[M.sL]){var r=d(M.sL,L);x+=r.keyword_count;return r.value}else{return F(L,M)}}function I(M,r){var L=M.cN?'<span class="'+M.cN+'">':"";if(M.rB){y+=L;M.buffer=""}else{if(M.eB){y+=m(r)+L;M.buffer=""}else{y+=L;M.buffer=r}}D.push(M);A+=M.r}function G(N,M,Q){var R=D[D.length-1];if(Q){y+=J(R.buffer+N,R);return false}var P=q(M,R);if(P){y+=J(R.buffer+N,R);I(P,M);return P.rB}var L=v(D.length-1,M);if(L){var O=R.cN?"</span>":"";if(R.rE){y+=J(R.buffer+N,R)+O}else{if(R.eE){y+=J(R.buffer+N,R)+O+m(M)}else{y+=J(R.buffer+N+M,R)+O}}while(L>1){O=D[D.length-2].cN?"</span>":"";y+=O;L--;D.length--}var r=D[D.length-1];D.length--;D[D.length-1].buffer="";if(r.starts){I(r.starts,"")}return R.rE}if(w(M,R)){throw"Illegal"}}var E=e[B];var D=[E.dM];var A=0;var x=0;var y="";try{var s,u=0;E.dM.buffer="";do{s=p(C,u);var t=G(s[0],s[1],s[2]);u+=s[0].length;if(!t){u+=s[1].length}}while(!s[2]);if(D.length>1){throw"Illegal"}return{r:A,keyword_count:x,value:y}}catch(H){if(H=="Illegal"){return{r:0,keyword_count:0,value:m(C)}}else{throw H}}}function g(t){var p={keyword_count:0,r:0,value:m(t)};var r=p;for(var q in e){if(!e.hasOwnProperty(q)){continue}var s=d(q,t);s.language=q;if(s.keyword_count+s.r>r.keyword_count+r.r){r=s}if(s.keyword_count+s.r>p.keyword_count+p.r){r=p;p=s}}if(r.language){p.second_best=r}return p}function i(r,q,p){if(q){r=r.replace(/^((<[^>]+>|\t)+)/gm,function(t,w,v,u){return w.replace(/\t/g,q)})}if(p){r=r.replace(/\n/g,"<br>")}return r}function n(t,w,r){var x=h(t,r);var v=a(t);var y,s;if(v){y=d(v,x)}else{return}var q=c(t);if(q.length){s=document.createElement("pre");s.innerHTML=y.value;y.value=k(q,c(s),x)}y.value=i(y.value,w,r);var u=t.className;if(!u.match("(\\s|^)(language-)?"+v+"(\\s|$)")){u=u?(u+" "+v):v}if(/MSIE [678]/.test(navigator.userAgent)&&t.tagName=="CODE"&&t.parentNode.tagName=="PRE"){s=t.parentNode;var p=document.createElement("div");p.innerHTML="<pre><code>"+y.value+"</code></pre>";t=p.firstChild.firstChild;p.firstChild.cN=s.cN;s.parentNode.replaceChild(p.firstChild,s)}else{t.innerHTML=y.value}t.className=u;t.result={language:v,kw:y.keyword_count,re:y.r};if(y.second_best){t.second_best={language:y.second_best.language,kw:y.second_best.keyword_count,re:y.second_best.r}}}function o(){if(o.called){return}o.called=true;var r=document.getElementsByTagName("pre");for(var p=0;p<r.length;p++){var q=b(r[p]);if(q){n(q,hljs.tabReplace)}}}function l(){if(window.addEventListener){window.addEventListener("DOMContentLoaded",o,false);window.addEventListener("load",o,false)}else{if(window.attachEvent){window.attachEvent("onload",o)}else{window.onload=o}}}var e={};this.LANGUAGES=e;this.highlight=d;this.highlightAuto=g;this.fixMarkup=i;this.highlightBlock=n;this.initHighlighting=o;this.initHighlightingOnLoad=l;this.IR="[a-zA-Z][a-zA-Z0-9_]*";this.UIR="[a-zA-Z_][a-zA-Z0-9_]*";this.NR="\\b\\d+(\\.\\d+)?";this.CNR="\\b(0[xX][a-fA-F0-9]+|(\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)";this.BNR="\\b(0b[01]+)";this.RSR="!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|\\.|-|-=|/|/=|:|;|<|<<|<<=|<=|=|==|===|>|>=|>>|>>=|>>>|>>>=|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~";this.ER="(?![\\s\\S])";this.BE={b:"\\\\.",r:0};this.ASM={cN:"string",b:"'",e:"'",i:"\\n",c:[this.BE],r:0};this.QSM={cN:"string",b:'"',e:'"',i:"\\n",c:[this.BE],r:0};this.CLCM={cN:"comment",b:"//",e:"$"};this.CBLCLM={cN:"comment",b:"/\\*",e:"\\*/"};this.HCM={cN:"comment",b:"#",e:"$"};this.NM={cN:"number",b:this.NR,r:0};this.CNM={cN:"number",b:this.CNR,r:0};this.BNM={cN:"number",b:this.BNR,r:0};this.inherit=function(r,s){var p={};for(var q in r){p[q]=r[q]}if(s){for(var q in s){p[q]=s[q]}}return p}}();hljs.LANGUAGES.cpp=function(){var a={keyword:{"false":1,"int":1,"float":1,"while":1,"private":1,"char":1,"catch":1,"export":1,virtual:1,operator:2,sizeof:2,dynamic_cast:2,typedef:2,const_cast:2,"const":1,struct:1,"for":1,static_cast:2,union:1,namespace:1,unsigned:1,"long":1,"throw":1,"volatile":2,"static":1,"protected":1,bool:1,template:1,mutable:1,"if":1,"public":1,friend:2,"do":1,"return":1,"goto":1,auto:1,"void":2,"enum":1,"else":1,"break":1,"new":1,extern:1,using:1,"true":1,"class":1,asm:1,"case":1,typeid:1,"short":1,reinterpret_cast:2,"default":1,"double":1,register:1,explicit:1,signed:1,typename:1,"try":1,"this":1,"switch":1,"continue":1,wchar_t:1,inline:1,"delete":1,alignof:1,char16_t:1,char32_t:1,constexpr:1,decltype:1,noexcept:1,nullptr:1,static_assert:1,thread_local:1,restrict:1,_Bool:1,complex:1},built_in:{std:1,string:1,cin:1,cout:1,cerr:1,clog:1,stringstream:1,istringstream:1,ostringstream:1,auto_ptr:1,deque:1,list:1,queue:1,stack:1,vector:1,map:1,set:1,bitset:1,multiset:1,multimap:1,unordered_set:1,unordered_map:1,unordered_multiset:1,unordered_multimap:1,array:1,shared_ptr:1}};return{dM:{k:a,i:"</",c:[hljs.CLCM,hljs.CBLCLM,hljs.QSM,{cN:"string",b:"'\\\\?.",e:"'",i:"."},{cN:"number",b:"\\b(\\d+(\\.\\d*)?|\\.\\d+)(u|U|l|L|ul|UL|f|F)"},hljs.CNM,{cN:"preprocessor",b:"#",e:"$"},{cN:"stl_container",b:"\\b(deque|list|queue|stack|vector|map|set|bitset|multiset|multimap|unordered_map|unordered_set|unordered_multiset|unordered_multimap|array)\\s*<",e:">",k:a,r:10,c:["self"]}]}}}();hljs.LANGUAGES.r={dM:{c:[hljs.HCM,{cN:"number",b:"\\b0[xX][0-9a-fA-F]+[Li]?\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\b\\d+(?:[eE][+\\-]?\\d*)?L\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\b\\d+\\.(?!\\d)(?:i\\b)?",e:hljs.IMMEDIATE_RE,r:1},{cN:"number",b:"\\b\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d*)?i?\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\.\\d+(?:[eE][+\\-]?\\d*)?i?\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"keyword",b:"(?:tryCatch|library|setGeneric|setGroupGeneric)\\b",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\.\\.\\.",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\.\\.\\d+(?![\\w.])",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\b(?:function)",e:hljs.IMMEDIATE_RE,r:2},{cN:"keyword",b:"(?:if|in|break|next|repeat|else|for|return|switch|while|try|stop|warning|require|attach|detach|source|setMethod|setClass)\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"literal",b:"(?:NA|NA_integer_|NA_real_|NA_character_|NA_complex_)\\b",e:hljs.IMMEDIATE_RE,r:10},{cN:"literal",b:"(?:NULL|TRUE|FALSE|T|F|Inf|NaN)\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"identifier",b:"[a-zA-Z.][a-zA-Z0-9._]*\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"operator",b:"<\\-(?!\\s*\\d)",e:hljs.IMMEDIATE_RE,r:2},{cN:"operator",b:"\\->|<\\-",e:hljs.IMMEDIATE_RE,r:1},{cN:"operator",b:"%%|~",e:hljs.IMMEDIATE_RE},{cN:"operator",b:">=|<=|==|!=|\\|\\||&&|=|\\+|\\-|\\*|/|\\^|>|<|!|&|\\||\\$|:",e:hljs.IMMEDIATE_RE,r:0},{cN:"operator",b:"%",e:"%",i:"\\n",r:1},{cN:"identifier",b:"`",e:"`",r:0},{cN:"string",b:'"',e:'"',c:[hljs.BE],r:0},{cN:"string",b:"'",e:"'",c:[hljs.BE],r:0},{cN:"paren",b:"[[({\\])}]",e:hljs.IMMEDIATE_RE,r:0}]}};
+hljs.initHighlightingOnLoad();
+</script>
+
+<!-- MathJax scripts -->
+<script type="text/javascript" src="https://cdn.bootcss.com/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  padding: 1em;
+  line-height: 20px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 {
+   font-size:2.2em;
+}
+
+h2 {
+   font-size:1.8em;
+}
+
+h3 {
+   font-size:1.4em;
+}
+
+h4 {
+   font-size:1.0em;
+}
+
+h5 {
+   font-size:0.9em;
+}
+
+h6 {
+   font-size:0.8em;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre, img {
+  max-width: 100%;
+}
+pre {
+  overflow-x: auto;
+}
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
+   }
+
+   body {
+      font-size:12pt;
+      max-width:100%;
+   }
+
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
+   }
+
+   tr, img {
+      page-break-inside: avoid;
+   }
+
+   img {
+      max-width: 100% !important;
+   }
+
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
+   }
+
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
+   }
+
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<p>This vignette contains an introduction to <em>destim</em>: its main purpose, syntax and some technical details of its internal behaviour. Some basic knowledge about Hidden Markov Models would be useful to understand how the package works, but not essential to follow this vignette.</p>
+
+<h2>Location of devices</h2>
+
+<p>This section contains a brief explanation about the intended use of the package and some remarks on the methodology.</p>
+
+<h3>Introduction</h3>
+
+<p>This package purpose is to estimate the spatial distribution of the number of devices, which corresponds to an intermediate step in the general methodology framework described in @WP5Deliverable1.3.</p>
+
+<p>The network events are the result of the constant interaction between a mobile device and a telecommunication network. While the information comprised in these events can be quite complex (and rich), since we are mostly interested in geolocation, a space likelihood that summarizes the event is all we need. The transformation from the network events to the likelihood is quite technical and clearly corresponds to the mobile network operators (MNO), see @WP5Deliverable1.3 for more details.</p>
+
+<p>By space likelihood, we mean the likelihood of the event conditioned on the position of the device. It is quite obvious to identify this likelihood with the emission probabilities of a Hidden Markov model.</p>
+
+<h3>The model</h3>
+
+<p>So, we propose a Hidden Markov model to describe the movement of the devices. Those models are quite general and flexible, can be made simple or as complex as wished. Unlike usual, we are not going to estimate the emissions probabilities, that as said we consider known.</p>
+
+<p>As we are mainly interested in estimate their location, and observation events are expected to give mostly information about it,location is a natural choice as state of the model. Since we are considering a tessellation of the map, each possible state would be a tile.</p>
+
+<p>While this could be the simpler approach, it is important to note that more complexity in the state-space might be useful. For example, we might want to represent a car moving north in a highway and a car moving south in the same tile (the tile contains both lanes) by different states, as they are expected to go next to different tiles.</p>
+
+<p>So, if we denote by \(n\) the number of tiles, we are going to have not less than \(n\) states, and possibly more, so let us say we have \(O(n)\) states. In a Hidden Markov model, this means that we have \(O(n^2)\) transition probabilities to estimate. Of course, this is not viable, so we are going to fix to zero all transition probabilities to non-contiguous tiles.</p>
+
+<p>Note that in practice, we can do this without losing generality, because given an upper bound for speed \(V\) and a lower bound \(E\) for the distance between non-contiguous tiles, we can set \(\Delta t = \frac{E}{V}\) and the <em>jump</em> will no longer be possible.</p>
+
+<p>Now, we have \(O(n)\) non zero transitions, which is more affordable, but still very expensive. If we want to reduce this complexity, one option is to classify the states in a certain number of classes, and constrain the transition probabilities to be equal for tiles of the same kind. This only makes sense for periodic tesselations, so it is a strong argument to use periodic tesselations better than other possible choices (Voronoi, BSA, etc.). This is not a limitation of the package though, so it is still possible to estimate models based in non-periodic tilings, but \(O(n)\) parameters would have to be estimated. In practice, the package allows any linear constraint between the transition probabilities.</p>
+
+<p>So, we can use constraints to reduce the number of parameters as much as wanted. It is a good idea to keep small the number of (free) parameters: on one hand the likelihood optimization becomes less computationally expensive and on the other hand we get a more parsimonious model.</p>
+
+<h3>Fitting the model</h3>
+
+<p>Once we have defined an appropiate model for our problem, the next step is to estimate the (hopefully few) free parameters. As has been already stated, emissions are known, so there are no emission parameters to fit. The initial state is either fixed or set to steady state, so the only parameters to fit in practice are the probabilities of transition.</p>
+
+<p>The method used to estimate the parameters is maximum likelihood, and the forward algorithm computes the (minus) log-likelihood. A constrained optimization is then done. Note that EM algorithm is generally not a good choice for constrained problems, so it is not used in the package.</p>
+
+<p>To get the objective function and the constraints, some previous steps are required to reduce the dimension of the search space. Let \(P\) be the column vector of transition probabilities. The linear constraints can be represented as the augmented matrix \((A \vert B)\) so that \(AP = B\). After a pivoted QR decomposition is done, we have \(R \tilde{P} = Q' B\) where \(\tilde{P}\) is a permutation of \(P\) and \(R\) an upper triangular matrix with non decreasing diagonal elements. Moreover we can express \(R\) in blocks as:
+\[
+R = \left(
+\begin{array}{c c }
+R_{11} & R_{12} \
+0 & 0
+\end{array}
+\right)
+\]
+where \(R_{11}\) is a full-rank square upper diagonal matrix. Accordingly we can define blocks for \(Q\) and \(\tilde{P}\):
+\begin{align}
+Q &amp; = \left( 
+\begin{array}{c c}
+Q_1 &amp; Q_2
+\end{array}
+\right) \
+\tilde{P} &amp; = \left(
+\begin{array}{c}
+\tilde{P}_1 \
+\tilde{P}_2
+\end{array}
+\right)
+\end{align}</p>
+
+<p>Note that \(Q_2' B = 0\), otherwise the constraints can not be fulfilled. The variables in \(\tilde{P}_2\) are taken as the free parameters, because being \(R_{11}\) full-rank, we have \(\tilde{P}_1 = R_{11}^{-1}(Q_1'B - R_{12} \tilde{P}_2)\) so \(\tilde{P}_2\) determines \(\tilde{P}_1\). These free parameters are transition probabilities and fully determine the transition matrix and thus the likelihood. Moreover, the equality constraints have vanished and now we only have to impose that transition probabilities are between zero and one. Obviously those are linear constraints for \(\tilde{P}_2\), so all we have to do is a linear constrained non-linear optimization in the same space. The linear contraints may seem to be a lot, but in practice, a good modeling will make most of the constraints equal, as most of the transition probabilities are going to be equal.</p>
+
+<p>Usually, algorithms for constrained optimization will require an initial value in the interior of the feasible region. To get such initial value, the following algorithm is used:</p>
+
+<ol>
+<li>Set transition probabilities to independent uniform \((0,1)\) random variables.</li>
+<li>Now the constraints do not hold, so the closest point in the constrained space is got through Lagrange multipliers.</li>
+<li>Now some of the probabilities might be greater than one or smaller than zero. Those are set once again to independent uniforms.</li>
+<li>Repeat steps 2 and 3 till all transition probabilities are between zero and one.</li>
+</ol>
+
+<p>As already stated, the initial state is set to steady if not fixed. The steady state is calculated as the (first) eigenvector that its eigenvalue is close enough to one. This should be enough because these Markov chains are expected to be both irreducible and aperiodic, otherwise we would have strange movement restrictions.</p>
+
+<h3>The outputs</h3>
+
+<p>Once the model has been fit, we can estimate the smooth states by means of the forward-backward algorithm. The smooth states are the mass probability function of the states given the observed data (and the model), thus they kind of summarize all the information available for a given time \(t\). So one of the outputs of the package are the smooth states, that can be aggregated to get a space distribution of the number of devices as explained in @WP5Deliverable1.3, section 4.2.</p>
+
+<p>The other main output of the package is the posterior joint mass probability function for two consecutive instants \(t, t + \Delta t\) of the states. As it is a posterior probability, it is once again conditioned on all the information available, but it is more dynamic because its time reference is now an interval. A possible analogy would be the smooth positions and speeds of a particle. The former would correspond to position and the later to speed.</p>
+
+<p>Both outputs are needed to estimate the target population.</p>
+
+<h2>Syntax and basic usage</h2>
+
+<p>This section explains briefly the main functions of the package.</p>
+
+<h3>Modeling</h3>
+
+<p>Obviously, the first step is to create a model. In <em>destim</em>, the primary model creator is the function HMM.</p>
+
+<pre><code class="r">model &lt;- HMM(5)
+</code></pre>
+
+<p>When the first parameter is a number, it contains the number of states, so we have five states. Since we have not specified a list of transitions, all states transition to themselves and so only five transitions too.</p>
+
+<pre><code class="r">nstates(model)
+#&gt; [1] 5
+ntransitions(model)
+#&gt; [1] 5
+transitions(model)
+#&gt;      [,1] [,2] [,3] [,4] [,5]
+#&gt; [1,]    1    2    3    4    5
+#&gt; [2,]    1    2    3    4    5
+</code></pre>
+
+<p>The transitions with non zero probability are represented by an integer matrix with two rows, where each column is a transition. The first column is the initial state and the second the final state. Of course, the states are represented by an integer number.</p>
+
+<p>Now, let us look at the constraints.</p>
+
+<pre><code class="r">constraints(model)
+#&gt;      [,1] [,2] [,3] [,4] [,5] [,6]
+#&gt; [1,]    1    0    0    0    0    1
+#&gt; [2,]    0    1    0    0    0    1
+#&gt; [3,]    0    0    1    0    0    1
+#&gt; [4,]    0    0    0    1    0    1
+#&gt; [5,]    0    0    0    0    1    1
+</code></pre>
+
+<p>As we have not specified any constraints, one constraint by state is introduced, the sum of the transition probabilities fixed one initial state has to be one. Otherwise, the transition matrix would not be stochastic. In general, the package adjusts this specific kind of constraints automatically.</p>
+
+<p>The constraints are represented as the augmented matrix of a linear system of equations. The transition probabilities must fulfill the equations, with the same order as shown in transitions function. So the first coefficient in each row is for the transition probability of the transition shown in the first column of the matrix of transitions, and so on.</p>
+
+<p>Both transitions and constraints can be specified as parameters when creating the model. It is also possible to add transitions and constraints later.</p>
+
+<pre><code class="r">model &lt;- addtransition(model,c(1,2))
+model &lt;- addconstraint(model,c(1,2))
+transitions(model)
+#&gt;      [,1] [,2] [,3] [,4] [,5] [,6]
+#&gt; [1,]    1    1    2    3    4    5
+#&gt; [2,]    2    1    2    3    4    5
+constraints(model)
+#&gt;      [,1] [,2] [,3] [,4] [,5] [,6] [,7]
+#&gt; [1,]    1    1    0    0    0    0    1
+#&gt; [2,]    0    0    1    0    0    0    1
+#&gt; [3,]    0    0    0    1    0    0    1
+#&gt; [4,]    0    0    0    0    1    0    1
+#&gt; [5,]    0    0    0    0    0    1    1
+#&gt; [6,]    1   -1    0    0    0    0    0
+</code></pre>
+
+<p>Now it becomes possible to transition from state 1 to state 2, and in consequence, the first constraint is changed, so we have \(p_{11} + p_{12} = 1\) instead \(p_{11} = 1\). Moreover, we have added an equality constraint: the first transition probability is equal to the second one. In the matrix of transitions we can see that those first transitions are the transition from one to two and from one to one respectively. The new can be seen in the last row of the new constraints matrix. The constraints to add can also be expressed as the rows of the constraints matrix we want to append.</p>
+
+<p>The emission probabilities are also stored in a matrix, where the element \(e_{i j}\) is the probability of the event \(j\) to happen, knowing that the device is placed in tile \(i\). Of course, the number of possible events is expected to be much smaller than the number of actually observed events. It is possible, though, that the number of columns of the emissions matrix matches the number of actually observed events. This way we do not save memory with the matrix, but it allows us to do the estimations even for a continuous space of observable events.</p>
+
+<p>Note that, in the particular, if any possible event corresponds to a column of the matrix of emissions, each row sums to one. This does not happen in general, as the columns do not need to be exhaustive, and in the continous case they do not even can.</p>
+
+<p>As we have not specified the emission probabilities, they are set to NULL by default.</p>
+
+<pre><code class="r">emissions(model)
+#&gt; NULL
+emissions(model)&lt;-matrix(c(0.3, 0.3, 0.7, 0.9, 0.9,
+                           0.7, 0.7, 0.3, 0.1, 0.1),
+                         nrow = 5, ncol = 2)
+emissions(model)
+#&gt;      [,1] [,2]
+#&gt; [1,]  0.3  0.7
+#&gt; [2,]  0.3  0.7
+#&gt; [3,]  0.7  0.3
+#&gt; [4,]  0.9  0.1
+#&gt; [5,]  0.9  0.1
+</code></pre>
+
+<p>Emission probabilities are expected to be computed separately, so the model is ready to directly insert the emissions matrix.</p>
+
+<p>Of course, in practice models will have many states and will be created automatically. While the purpose of this package is estimation and not automatic modeling (at least for the moment), some functions have been added to ease the construction of example models.</p>
+
+<p>The function HMMrectangle creates a rectangle model. This model represents a rectangular grid with square tiles, where you can only stay in the same tile or go to a contiguous tile. This means that there are nine non zero transition probabilities by tile. Moreover, horizontal and vertical transitions have the same probability, and diagonal transitions also have the same probability (but different to vertical and horizontal).</p>
+
+<p>As obvious, the rectangle model only have two free parameters to fit, but the number of transitions can be very high even for small rectangles.</p>
+
+<pre><code class="r">model &lt;- HMMrectangle(10,10)
+ntransitions(model)
+#&gt; [1] 784
+nconstraints(model)
+#&gt; [1] 782
+</code></pre>
+
+<p>A small rectangle of 10x10 tiles has 784 transitions! Fortunatelly, we only need to fit two parameters. Note that the number of constraints plus the number of free parameters agrees with the number of transitions.</p>
+
+<p>A very simple function to create emissions matrices is also provided. It is called createEM and the observation events are just connections to a specific tower. The input parameters are the dimensions of the rectangle, the location of towers (in grid units) and the distance decay function of the signal strength Martijn Tennekes (2018). In this case, each tile is required to be able to connect to at least one antenna, so no out of coverage tiles are allowed. Note that this is not a requirement for the model, just a limitation of createEM.</p>
+
+<pre><code class="r">tws &lt;- matrix(c(3.2, 6.1, 2.2, 5.7, 5.9, 9.3, 5.4,
+                4.0, 2.9, 8.6, 6.9, 6.2, 9.7, 1.3),
+              nrow = 2, ncol = 7)
+S &lt;- function(x) if (x &gt; 5) return(0) else return(20*log(5/x))
+emissions(model)&lt;-createEM(c(10,10), tws, S)
+dim(emissions(model))
+#&gt; [1] 100   7
+</code></pre>
+
+<h3>Model fitting</h3>
+
+<p>Once the model is defined, the next step is to fit its parameters, by constrained maximum likelihood. As already said, the optimizer usually requires an initial guess, so the function initparams obtains an initial random set of parameters.</p>
+
+<pre><code class="r">model &lt;- initparams(model)
+all(model$parameters$transitions &lt; 1)
+#&gt; [1] TRUE
+all(model$parameters$transitions &gt; 0)
+#&gt; [1] TRUE
+range(constraints(model) %*% c(model$parameters$transitions, -1))
+#&gt; [1] -1.110223e-16  0.000000e+00
+</code></pre>
+
+<p>All transition probabilities are between zero and one and the constraints hold, but no observed data is used.</p>
+
+<p>The function minparams reduces the number of parameters of the model to the number of free parameters, as already explained.</p>
+
+<pre><code class="r">ntransitions(model)
+#&gt; [1] 784
+model &lt;- minparams(model)
+rparams(model)
+#&gt; [1] 0.30651700 0.02107885
+</code></pre>
+
+<p>So, only two parameters are really needed! It is possible to assign values with rparams, as the optimizer does, but some transition probability might move outside the interval \([0,1]\). The optimization process avoids this problem constraining by linear inequalities.</p>
+
+<p>Now the model is ready to be fitted. Of course, the observed events are needed. Since we have the emissions matrix in the model, the observed events is just an integer vector, that refers to the appropiate column of the emissions matrix.</p>
+
+<pre><code class="r">obs &lt;- c(1,2,NA,NA,NA,NA,7,7)
+logLik(model, obs)
+#&gt; [1] 9.934475
+model &lt;- fit(model, obs)
+rparams(model)
+#&gt; [1] 4.999942e-01 3.702555e-10
+logLik(model, obs)
+#&gt; [1] 8.862961
+</code></pre>
+
+<p>Despite the name, logLik returns minus the log-likelihood, so the smaller the better. As in the example, it is possible to introduce missing values for the observations as <em>NA</em>.</p>
+
+<h3>The final estimations</h3>
+
+<p>Finally, the model is ready to produce some estimations. The main outputs of this package are the smooth states and the smooth consecutive pairwaise states (sometimes called \(\xi_{i j}\) in the literature).</p>
+
+<p>The function sstates returns the smooth states as a matrix of <em>number of states</em> \(\times\) <em>number of observations</em> (missing values included) dimensions. So each column represents the space distribution in its corresponding time slot.</p>
+
+<pre><code class="r">dim(sstates(model, obs))
+#&gt; [1] 100   8
+image(matrix(sstates(model, obs)[,4], ncol = 10))
+</code></pre>
+
+<p><img src="data:image/png;base64,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" alt="plot of chunk unnamed-chunk-9"/></p>
+
+<p>The function scpstates returns the (smooth) joint probability mass function for consecutive states, analogous to the usually denoted \(\xi_{i j}\) probabilities in the Baum-Welch algorithm (once convergence is achieved). This time, each column represents the space bi-variant distribution matrix as follows: the probability of the consecutive pair of states \((i,j)\) can be found in the row \(400(i-1) + j\).</p>
+
+<pre><code class="r">dim(scpstates(model, obs))
+#&gt; [1] 10000     7
+image(matrix(scpstates(model, obs)[,4], ncol = 100), xlim = c(0,1))
+</code></pre>
+
+<p><img src="data:image/png;base64,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" alt="plot of chunk unnamed-chunk-10"/></p>
+
+<p>Both each row and each column of the previous image are bidimensional spaces, so it is difficult to visualize: we would need four dimensions instead two! Even so, it is easy to see a diagonal pattern, which is coherent with the transition matrix. The transition matrix only allows transitions to contiguous points, so it is <em>almost</em> diagonal. In consequence, so are the \(\xi_{i j}\) probabilities.</p>
+
+<h2>Some remarks about computational efficiency</h2>
+
+<p>The package is not optimized yet, but some possible bottlenecks have been already noticed. In this section we are going to dicuss them.</p>
+
+<h3>Model construction</h3>
+
+<p>As has been already stated, the package is not really ready for model construction, except for the function HMMrectangle, which serves only for toy models. While it is a slow function, its speed can be improved greatly using some compiled language. It is also an embarrassingly parallel problem, so it scales well. On the downside, its complexity increases with the number of states, which can be huge, as it is potentially the area of the country. While a device normally moves around a much smaller area, in practice we need to estimate the position for all the devices, so it is expected to be a very computationally demanding step.</p>
+
+<h3>Model initialization and parametrization</h3>
+
+<p>The algorithm used to find an inital value for the optimizer, solves a linear system of equations at each step. While the order of the system grows with the number of transitions and constraints, in practice, most constraints state the equality between two transition probabilities. It is not difficult to get rid of one of the transitions and the constraint in those cases, so in practice the process scales very well for parsimonious models. The function in the package might seem a bit slow, but the elimination of constraints should be written in some compiled language and optimized.</p>
+
+<p>Mostly all said for initialization also goes for parametrization, where the QR decomposition is the <em>slow</em> step.</p>
+
+<h3>Forward-Backward algorithm</h3>
+
+<p>While it is not implemented yet, the transition matrix can now be easily made sparse, which will improve greatly the computational efficiency of the algorithm. The algorithm is expected to scale well both in memory and speed, and can also be made parallel. As the forward part is used also for likelihood evaluation (the complete algorithm is used for smoothing), a highly efficient forward-backward algorithm is quite important. </p>
+
+<h3>Likelihood optimization</h3>
+
+<p>The purpose of all the previous steps is to make easier the task of the optimizer, so it should not be a problem if everything else is fine. Transition probabilities are required to be between zero and one, what in general means O(n) inequality constraints. A well specified parsimonious model, will often have a lot less constraints, as most of them are duplicated. As a reference, a HMMrectangle(20,20) has 3364 transitions and only 5 constraints are needed in practice.</p>
+
+<p>Duplicated rows are eliminated from the matrix of inequality constraints before calling the optimizer, just in case some of the equalities between probabilities are consequence of the constraints of the model, but are not a specific constraint.</p>
+
+<p>Duplicate rows removal for a matrix of floats is done through a small C++ function, using RCpp package. The function is not very efficient, except when there are few different rows, and it will be replaced by a function that sorts the matrix and then removes duplicates in future versions of the package. </p>
+
+<h1>References</h1>
+
+</body>
+
+</html>
