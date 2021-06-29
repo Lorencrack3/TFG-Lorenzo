@@ -18,4 +18,5 @@
 		<persons_file>persons.csv</persons_file>
 		<antennas_file>antennas.csv</antennas_file>
 		<random_seed>12</random_seed>
+		<output_dir>C:\Users\loren\Desktop\simulator\data\dataset8\output</output_dir>
 </simulation>

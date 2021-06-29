@@ -1,6 +1,6 @@
 ####  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ####
 ####                           SET PATHS                                    ####
-path_root         <- 'D:/Documentos/Universidad/TFG/MobileNetworkDataSimulationTemplate'
+path_root         <- 'D:/Github/TFG-Lorenzo/MobileNetworkDataSimulationTemplate'
 path_source       <- file.path(path_root, 'code/src')
 path_simConfig    <- file.path(path_root, 'data/simulatorConfig')
 path_events       <- file.path(path_root, 'data/networkEvents')
@@ -29,6 +29,7 @@ library(ggplot2)
 library(latex2exp)
 library(MASS)
 library(ISLR)
+library(dplyr)
 
 # Function get_simConfig to read the input files of the simulator
 source(file.path(path_source, 'get_simConfig.R'))
@@ -105,7 +106,7 @@ parameters.method <- fread(file.path(path_processParam, "parameters_method.csv")
 #resultados en variables internas
 
 for(m in 1:dim(parameters.method)[1]){
-  
+# for(m in 1:1){
   postLocProbAux.dt <- fread(file.path(path_postLoc, paste0('postLocProb_', geolocation_model, '_RSS-', geolocation_prior, '_', parameters.method[m,2], '.csv')))
   postLocProbAux.dt <- merge(postLocProbAux.dt, centroidCoord.dt, by = 'tile') 
   
@@ -119,10 +120,10 @@ for(m in 1:dim(parameters.method)[1]){
   
   #### ** rmsd                                                                ####
   rmsdAux.dt <- postLocProbAux.dt[
-    , list(rd = rd(x = centroidCoord_x, y = centroidCoord_y, w = postLocProb)), by = c('device', 'time')]
+    , list(rd = rd(x = centroidCoord_x, y = centroidCoord_y, w = postLocProb)), by = c('device', 'time', 'cluster', 'event_cellID')]
   
   msdAux.dt <- merge(cp_truePosAux.dt, rmsdAux.dt, by = c('device', 'time'))
-  
+
   
   msdAux.dt[
     , msd := cp_tp**2 + rd**2][
@@ -130,10 +131,17 @@ for(m in 1:dim(parameters.method)[1]){
         , experiment := parameters.method[m,2]
       ]
   
+  #Añadimos el numero de cambios de antena por dispositivo a msdAux.
+  
+  antenna_changes = msdAux.dt %>% 
+    group_by(device) %>%
+    summarise(antenna_changes = length(unique(event_cellID)))
+  
+  msdAux.dt=merge(msdAux.dt, antenna_changes, by = 'device')
   
   #MSD maestro con todos los experimentos
-  msdmaster.dt <- rbindlist(list(msdmaster.dt,msdAux.dt))
-  
+  msdmaster.dt <- rbindlist(list(msdmaster.dt,msdAux.dt), fill = TRUE)
+  #msdmaster.dt <- msdmaster.dt[,as.list(cp(x = centroidCoord_x, y = centroidCoord_y, w = postLocProb)), by = c('device', 'time', 'cluster')]
   
   
   #Asignaciones a variables internas para facilitar su posterior analisis
@@ -148,10 +156,21 @@ for(m in 1:dim(parameters.method)[1]){
   assign(msd, msdAux.dt)
   }
 
-#Comparaciones graficas del sesgo de todos los experimentos
 
-ggplot(msdmaster.dt, aes(x = experiment, y = cp_tp / tile_size)) +
-  geom_boxplot(aes(fill = '')) +
+#Analisis parámetros ALL_devices
+
+Parameters.dt <- fread(file.path(path_postLoc, paste0('Parameters_', parameters.method[1,2], '.csv')))
+
+ggplot(Parameters.dt, aes(x=theta1, y=theta2)) + geom_point()
+
+
+#Analisis MSDMASTER por experimento
+
+comparacion <- msdmaster.dt %>% filter(experiment %in% c('4_cluster','5_cluster', 'All_devices'))
+comparacion <- msdmaster.dt %>% filter(experiment %in% c('D_10%_4_cluster','D_10%_5_cluster', 'All_devices'))
+comparacion <- msdmaster.dt %>% filter(experiment %in% c('D_25%_4_cluster','D_25%_5_cluster', 'All_devices'))
+ggplot(comparacion, aes(x = experiment , y = cp_tp / tile_size)) +
+  geom_boxplot(aes(fill = experiment)) +
   theme_bw() +
   labs(x = '', y = TeX('$b_{dt}$ (no. tiles)\n'), title = '') +
   theme(plot.title = element_text(hjust = 0.5, size = 18),
@@ -160,7 +179,7 @@ ggplot(msdmaster.dt, aes(x = experiment, y = cp_tp / tile_size)) +
         legend.title = element_text(size = 14), legend.text = element_text(size = 12),
         legend.position = 'none')
 
-ggplot(msdmaster.dt, aes(x = time, y = cp_tp / tile_size, group = time)) +
+ggplot(comparacion, aes(x = time, y = cp_tp / tile_size, group = time)) +
   geom_boxplot(aes(fill = experiment)) +
   facet_grid(experiment ~ . ) +
   theme_bw() +
@@ -171,30 +190,35 @@ ggplot(msdmaster.dt, aes(x = time, y = cp_tp / tile_size, group = time)) +
         legend.title = element_text(size = 14), legend.text = element_text(size = 12),
         legend.position = 'none')
 
+ggplot(comparacion, aes(x = experiment, y = rd / tile_size)) +
+  geom_boxplot(aes(fill = experiment)) +
+  theme_bw() +
+  labs(x = '', y = 'rmsd (no. tiles)\n', title = '') +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.text.x = element_text(size = 16), 
+        axis.title.y = element_text(size = 16), axis.text.y = element_text(size = 12),
+        legend.title = element_text(size = 14), legend.text = element_text(size = 12),
+        legend.position = 'none')
 
 
-#Comparacion con regresion lineal entre dos experimentos deseados, mejor dejar que R autocomplete
-#el experimento, ya que asi pone solo las comillas necesarias debido al %
+ggplot(comparacion, aes(x = time, y = rd / tile_size, group = time)) +
+  geom_boxplot(aes(fill = experiment)) +
+  facet_grid(experiment ~ . ) +
+  theme_bw() +
+  labs(x = '\nTime (s)', y = 'rmsd (no. tiles)\n', title = '') +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title.x = element_text(size = 16),axis.text.x = element_text(size = 16), 
+        axis.title.y = element_text(size = 16), axis.text.y = element_text(size = 12),
+        legend.title = element_text(size = 14), legend.text = element_text(size = 12),
+        legend.position = 'none')
 
-experiment_X=msd_All_devices
-experiment_Y=`msd_10_cluster`
 
-comparingexperiments=merge(experiment_X, experiment_Y)
-lm.fit=lm(comparingexperiments$cp_tp.y ~ comparingexperiments$cp_tp.x, comparingexperiments)
-summary(lm.fit)
+#Comparaciones por cluster de un experimento.
 
-ggplot(comparingexperiments, aes(comparingexperiments$cp_tp.x, comparingexperiments$cp_tp.y)) +
-  geom_point(aes(color = device)) +
-  stat_smooth(method = lm) +
-  theme_bw()
+experimentcluster=`msd_D_10%_5_cluster`
 
-confint(lm.fit)
-
-####  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ####
-####              PLOT DISTRIBUTIONS of b, rmsd AND msd                     ####
-#### ** Bias                                                                ####
-ggplot(`msd_10%_devices`, aes(x = model, y = `msd_10%_devices`$cp_tp / tile_size)) +
-  geom_boxplot(aes(fill = '')) +
+ggplot(experimentcluster, aes(x = reorder(as.character(experimentcluster$cluster),experimentcluster$cluster) , y = cp_tp / tile_size)) +
+  geom_boxplot(aes(fill = cluster)) +
   theme_bw() +
   labs(x = '', y = TeX('$b_{dt}$ (no. tiles)\n'), title = '') +
   theme(plot.title = element_text(hjust = 0.5, size = 18),
@@ -203,7 +227,133 @@ ggplot(`msd_10%_devices`, aes(x = model, y = `msd_10%_devices`$cp_tp / tile_size
         legend.title = element_text(size = 14), legend.text = element_text(size = 12),
         legend.position = 'none')
 
-ggplot(`msd_10%_devices`, aes(x = time, y = `msd_10%_devices`$cp_tp / tile_size, group = time)) +
+ggplot(experimentcluster, aes(x = time, y = cp_tp / tile_size, group = time)) +
+  geom_boxplot(aes(fill = '')) +
+  facet_grid(reorder(as.character(experimentcluster$cluster),experimentcluster$cluster) ~ . ) +
+  theme_bw() +
+  labs(x = '\nTime (s)', y = TeX('$b_{dt}$ (no. tiles)\n'), title = '') +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title.x = element_text(size = 16),axis.text.x = element_text(size = 16), 
+        axis.title.y = element_text(size = 16), axis.text.y = element_text(size = 12),
+        legend.title = element_text(size = 14), legend.text = element_text(size = 12),
+        legend.position = 'none')
+
+ggplot(experimentcluster, aes(x = reorder(as.character(experimentcluster$cluster),experimentcluster$cluster), y = rd / tile_size)) +
+  geom_boxplot(aes(fill = cluster)) +
+  theme_bw() +
+  labs(x = '', y = 'rmsd (no. tiles)\n', title = '') +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.text.x = element_text(size = 16), 
+        axis.title.y = element_text(size = 16), axis.text.y = element_text(size = 12),
+        legend.title = element_text(size = 14), legend.text = element_text(size = 12),
+        legend.position = 'none')
+
+
+ggplot(comparacion, aes(x = time, y = rd / tile_size, group = time)) +
+  geom_boxplot(aes(fill = cluster)) +
+  facet_grid(experiment ~ . ) +
+  theme_bw() +
+  labs(x = '\nTime (s)', y = 'rmsd (no. tiles)\n', title = '') +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.title.x = element_text(size = 16),axis.text.x = element_text(size = 16), 
+        axis.title.y = element_text(size = 16), axis.text.y = element_text(size = 12),
+        legend.title = element_text(size = 14), legend.text = element_text(size = 12),
+        legend.position = 'none')
+
+
+#Histograma devices por cluster por experimento
+
+
+devices_cluster = unique(experimentcluster[,cluster, by = 'device' ])
+
+Parameterscluster = merge(Parameters.dt, devices_cluster, by = 'device')
+
+ggplot(Parameterscluster, aes(x=theta1, y=theta2)) + 
+  geom_point(aes(color = reorder(as.character(Parameterscluster$cluster),Parameterscluster$cluster))) +
+  labs(colour = "Cluster") #+
+     # geom_text(label=Parameterscluster$device)
+
+
+hist(devices_cluster$cluster, main = 'Frecuencia de dispositivos por cluster',xlab = 'Cluster', ylab = 'Frecuencia', breaks=seq(min(devices_cluster$cluster)-0.5, max(devices_cluster$cluster)+0.5, by=1))
+
+#Media de cambios de antena por cluster
+
+devices_antenna_changes = unique(experimentcluster[,antenna_changes, by = c('device','cluster') ])
+
+g = ggplot(devices_antenna_changes, aes(reorder(as.character(cluster),cluster), fill=reorder(as.character(antenna_changes-1),antenna_changes-1)) ) +
+  labs(title = "Cambios de antena por cluster")+xlab("Cluster") + ylab("Cambios de antena")
+  theme(plot.title = element_text(size = rel(2), colour = "blue"))
+
+g+geom_bar(position="dodge") + 
+  theme(axis.title.x = element_text(face="bold", size=10)) + 
+  guides(fill=guide_legend(title="Cambios de antena"))
+
+mean_antenna_changes =experimentcluster%>%
+  group_by(cluster) %>%
+  summarise(mean_antenna_changes = mean(antenna_changes))
+
+barplot(as.matrix(mean_antenna_changes)[,2], main = 'Media de cambios de antena por cluster',xlab = "Cluster", ylab = "Media")
+
+#Representacion antenas
+
+ggplot(experimentcluster, aes(experimentcluster$event_cellID, experimentcluster$cp_tp)) +
+  geom_point(aes(color = as.character(`msd_5_cluster`$cluster))) +
+  labs(x = 'Eje x', y = 'Eje Y', title = 'Regresión', colour = 'Cluster') +
+  theme_bw()
+
+
+
+#Comparacion con regresion lineal entre dos experimentos deseados, mejor dejar que R autocomplete
+#el experimento, ya que asi pone solo las comillas necesarias debido al %
+
+experiment_X=msd_All_devices
+experiment_Y=experimentcluster
+
+
+comparingexperiments=merge(experiment_X,experiment_Y,by=c('device', 'time'))
+
+
+lm.fit=lm(cp_tp.y ~ cp_tp.x, comparingexperiments)
+summary(lm.fit)
+
+ggplot(comparingexperiments, aes(comparingexperiments$cp_tp.x/tile_size, comparingexperiments$cp_tp.y/tile_size)) +
+  geom_point(aes(color = as.character(comparingexperiments$cluster.y))) +
+  labs(x = 'rmsd All devices', y = 'cp_tp 5 cluster', title = 'Regresión', colour = 'cluster') +
+  stat_smooth(method = lm) +
+  theme_bw() #+
+   # geom_text(label=comparingexperiments$device)
+
+confint(lm.fit)
+
+
+lm.fit=lm(rd.y ~ rd.x, comparingexperiments)
+summary(lm.fit)
+
+ggplot(comparingexperiments, aes(comparingexperiments$rd.x/tile_size, comparingexperiments$rd.y/tile_size)) +
+  geom_point(aes(color = as.character(comparingexperiments$cluster.y))) +
+  labs(x = 'rmsd All devices', y = 'rmsd 5 cluster', title = 'Regresión', colour = 'cluster') +
+  stat_smooth(method = lm) +
+  theme_bw() #+
+ # geom_text(label=comparingexperiments$device)
+
+confint(lm.fit)
+
+
+####  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ####
+####              PLOT DISTRIBUTIONS of b, rmsd AND msd                     ####
+#### ** Bias                                                                ####
+ggplot(msd_All_devices, aes(x = model, y = msd_All_devices$cp_tp / tile_size)) +
+  geom_boxplot(aes(fill = model)) +
+  theme_bw() +
+  labs(x = '', y = TeX('$b_{dt}$ (no. tiles)\n'), title = '') +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        axis.text.x = element_text(size = 16), 
+        axis.title.y = element_text(size = 16), axis.text.y = element_text(size = 12),
+        legend.title = element_text(size = 14), legend.text = element_text(size = 12),
+        legend.position = 'none') #+
+  # geom_text(label=msd_All_devices$device)
+
+ggplot(msd_All_devices, aes(x = time, y = msd_All_devices$cp_tp / tile_size, group = time)) +
   geom_boxplot(aes(fill = model)) +
   facet_grid(model ~ . ) +
   theme_bw() +
@@ -227,8 +377,8 @@ ggplot(msd.dt, aes(x = device, y = cp_tp / tile_size, group = device)) +
 
 
 #### ** rmsd 
-ggplot(msd.dt, aes(x = model, y = rd / tile_size)) +
-  geom_boxplot(aes(fill = model)) +
+ggplot(comparacion, aes(x = experiment, y = rd / tile_size)) +
+  geom_boxplot(aes(fill = experiment)) +
   theme_bw() +
   labs(x = '', y = 'rmsd (no. tiles)\n', title = '') +
   theme(plot.title = element_text(hjust = 0.5, size = 18),
@@ -238,9 +388,9 @@ ggplot(msd.dt, aes(x = model, y = rd / tile_size)) +
         legend.position = 'none')
 
 
-ggplot(msd.dt, aes(x = time, y = rd / tile_size, group = time)) +
-  geom_boxplot(aes(fill = model)) +
-  facet_grid(model ~ . ) +
+ggplot(comparacion, aes(x = time, y = rd / tile_size, group = time)) +
+  geom_boxplot(aes(fill = experiment)) +
+  facet_grid(experiment ~ . ) +
   theme_bw() +
   labs(x = '\nTime (s)', y = 'rmsd (no. tiles)\n', title = '') +
   theme(plot.title = element_text(hjust = 0.5, size = 18),

@@ -1,6 +1,6 @@
 ####  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ####
 ####                           SET PATHS                                    ####
-path_root         <- 'D:/Documentos/Universidad/TFG/MobileNetworkDataSimulationTemplate'
+path_root         <- 'D:/Github/TFG-Lorenzo/MobileNetworkDataSimulationTemplate'
 path_source       <- file.path(path_root, 'code/src')
 path_simConfig    <- file.path(path_root, 'data/simulatorConfig')
 path_events       <- file.path(path_root, 'data/networkEvents')
@@ -43,7 +43,7 @@ sim <- list(simConfig_dir = path_simConfig,
             crs = sf::st_crs(NA))
 
 # device to plot
-devID <- 471
+devID <- 188
 
 
 rst      <- sim_get_raster(sim)
@@ -58,7 +58,7 @@ param        <- mobloc_param()
 strength_llh <- create_strength_llh(strength, param = param)
 
 
-postLocProb <- sim_get_prob(sim, device = devID, 'postLocProb_HMM_RSS-network')
+postLocProb <- sim_get_prob(sim, device = devID, 'postLocProb_HMM_RSS-network_5_cluster')
 setnames(postLocProb, c('tile'), c('rid'))
 setcolorder(postLocProb, c('t', 'dev', 'rid', 'cell', 'p'))
 

@@ -1,6 +1,6 @@
 ####  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ####
 ####                           SET PATHS                                    ####
-path_root         <- 'D:/Documentos/Universidad/TFG/MobileNetworkDataSimulationTemplate'
+path_root         <- 'D:/Github/TFG-Lorenzo/MobileNetworkDataSimulationTemplate'
 path_source       <- file.path(path_root, 'code/src')
 path_simConfig    <- file.path(path_root, 'data/simulatorConfig')
 path_events       <- file.path(path_root, 'data/networkEvents')
@@ -54,7 +54,7 @@ source(file.path(path_source, 'compute_staticModel.R'))
 parameters.method <- fread(file.path(path_processParam, "parameters_method.csv"))
 
 for(m in 1:dim(parameters.method)[1]){
-  
+# for(m in 7:7){
   
 ####  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ####
 #####           LOAD PARAMETERS AND NETWORK EVENT DATA                     #####
@@ -209,7 +209,33 @@ RSS.dt <- merge(RSS.dt, emissionProb_rasterCell.dt[, .(rasterCell, event_cellID,
   #### :::::::::::::::::::::::::::::::::::::: ####
   #####     COMPUTING KEY PARAMETER          #####
  
-  
+  if (parameters.method[m,1] == 'All'){
+    ParameterMatrix <- matrix(nrow = length(deviceIDs), ncol = 3)
+    cat('       fitting all devices...\n')
+    for(i in seq(along = deviceIDs)){
+      
+      ###                  :: For each device                          ####
+      devID <- deviceIDs[i]
+      cat(paste0('    device ', devID,'...\n'))
+      
+      # Selecting device events
+      cat('       selecting network events...')
+      events_device.dt <- events.dt[
+        device == devID, .(device, time, antennaID)][
+          order(device, time)]
+      
+      antennas_deviceID  <- unlist(events_device.dt[, c("antennaID")])
+      cat(' ok.\n')  
+      
+      if(!all(is.na(antennas_deviceID))){
+        HMMmodel_outputParam <- compute_HMMParams(model = model, observedValues = antennas_deviceID, 
+                                                  pad_coef = pad_coef, init = TRUE)
+        ParameterMatrix[i,1] <- devID
+        ParameterMatrix[i,c(2,3)] <- HMMmodel_outputParam$parameters$reducedparams$params
+        
+      }
+    }
+  }
   
   if (parameters.method[m,1] == 'mean'){
     
@@ -254,7 +280,7 @@ RSS.dt <- merge(RSS.dt, emissionProb_rasterCell.dt[, .(rasterCell, event_cellID,
   
   if (parameters.method[m,1] == 'cluster'){
     cat(paste0('Computing Key parameter with case ', parameters.method[m,2],'...\n'))  
-    antennascoord <- matrix(nrow = 70, ncol = 2)
+    antennascoord <- matrix(nrow = length(simConfigParam.list[["antennas_xml"]][["x"]]), ncol = 2)
     masterdevices <- matrix(nrow = length(deviceIDs), ncol = 2*(length(simConfigParam.list[["simConfigParameters"]][["times"]])))
     antennascoord[,1] <- simConfigParam.list[["antennas_xml"]][["x"]]
     antennascoord[,2] <- simConfigParam.list[["antennas_xml"]][["y"]]
@@ -306,15 +332,14 @@ RSS.dt <- merge(RSS.dt, emissionProb_rasterCell.dt[, .(rasterCell, event_cellID,
     
     dist_eucl <- dist(finalvectors, method = 'euclidean')
     
+    fviz_nbclust(as.matrix(dist_eucl), kmeans, method = "wss") +
+      geom_vline(xintercept = 4, linetype = 2) +
+      theme_bw()
     
-    #Hice kmeans sobre masterdevices para comprobar que da mejores resultados que sobre finalvectors
     
     Ncluster=as.integer(parameters.method[m,3])
     kmeans_cluster <- kmeans( x = dist_eucl, centers = Ncluster)
-    # kmeans_cluster[["centers"]]
-    fviz_nbclust(as.matrix(dist_eucl), kmeans, method = "wss") +
-           geom_vline(xintercept = 5, linetype = 2) +
-           theme_bw()
+
     
     clusterdevice <- kmeans_cluster[["cluster"]]
     devicecluster <- matrix(nrow = Ncluster, ncol = length(deviceIDs))
@@ -327,27 +352,61 @@ RSS.dt <- merge(RSS.dt, emissionProb_rasterCell.dt[, .(rasterCell, event_cellID,
     }
     
     ParameterMatrix <- matrix(nrow = Ncluster, ncol = 2) 
-    
+ 
     for (i in seq(Ncluster)){
-      number_of_nas <- sum(is.na(devicecluster[i,]))
-      devposition <- sample(x = devicecluster[i,-((length(deviceIDs)-number_of_nas+1):length(deviceIDs))], size = 1)
       
-      devID <- deviceIDs[devposition]
-      #(paste0('    device ', devID,'...\n'))
-      
-      # Selecting device events
-      #cat('       selecting network events...')
-      events_device.dt <- events.dt[
-        device == devID, .(device, time, antennaID)][
-          order(device, time)]
-      
-      antennas_deviceID  <- unlist(events_device.dt[, c("antennaID")])
-      #cat(' ok.\n')  
-      
-      HMMmodel_outputParam <- compute_HMMParams(model = model, observedValues = antennas_deviceID, 
-                                                pad_coef = pad_coef, init = TRUE)
-      ParameterMatrix[i,] <- HMMmodel_outputParam$parameters$reducedparams$params
-      
+      if (substring(as.character(parameters.method[m,2]), 1, 1)=='D'){
+        number_of_nas <- sum(is.na(devicecluster[i,]))
+        q=as.numeric(parameters.method[m,4])*as.integer(as.numeric(length(deviceIDs)-number_of_nas))
+        devpositionsample <- sample(x = devicecluster[i,-((length(deviceIDs)-number_of_nas+1):length(deviceIDs))], size = q, replace = F)
+        ParameterClusterMatrix <- matrix(nrow = q, ncol = 2)
+        for(j in seq(along = devpositionsample)){
+          
+          ###                  :: For each device                          ####
+          devID <- deviceIDs[devpositionsample[j]]
+          cat(paste0('    device ', devID,'...\n'))
+          
+          # Selecting device events
+          cat('       selecting network events...')
+          events_device.dt <- events.dt[
+            device == devID, .(device, time, antennaID)][
+              order(device, time)]
+          
+          antennas_deviceID  <- unlist(events_device.dt[, c("antennaID")])
+          cat(' ok.\n')  
+          
+          if(!all(is.na(antennas_deviceID))){
+            HMMmodel_outputParam <- compute_HMMParams(model = model, observedValues = antennas_deviceID, 
+                                                      pad_coef = pad_coef, init = TRUE)
+            ParameterClusterMatrix[j,] <- HMMmodel_outputParam$parameters$reducedparams$params
+            
+          }
+        }
+        
+        FinalParameters=c(mean(ParameterClusterMatrix[,1]), mean(ParameterClusterMatrix[,2]))
+        ParameterMatrix[i,] <- FinalParameters
+        
+        
+      }else{
+        number_of_nas <- sum(is.na(devicecluster[i,]))
+        devposition <- sample(x = devicecluster[i,-((length(deviceIDs)-number_of_nas+1):length(deviceIDs))], size = 1)
+        
+        devID <- deviceIDs[devposition]
+        #(paste0('    device ', devID,'...\n'))
+        
+        # Selecting device events
+        #cat('       selecting network events...')
+        events_device.dt <- events.dt[
+          device == devID, .(device, time, antennaID)][
+            order(device, time)]
+        
+        antennas_deviceID  <- unlist(events_device.dt[, c("antennaID")])
+        #cat(' ok.\n')  
+        
+        HMMmodel_outputParam <- compute_HMMParams(model = model, observedValues = antennas_deviceID, 
+                                                  pad_coef = pad_coef, init = TRUE)
+        ParameterMatrix[i,] <- HMMmodel_outputParam$parameters$reducedparams$params
+      }
     }
       
   }
@@ -360,7 +419,7 @@ RSS.dt <- merge(RSS.dt, emissionProb_rasterCell.dt[, .(rasterCell, event_cellID,
   #####    COMPUTING POSTERIOR LOCATION PROBABILITIES     #####
   
   for(i in seq(along = deviceIDs)){
-    
+    cluster = 0
     ###                  :: For each device                          ####
     devID <- deviceIDs[i]
     cat(paste0('    device ', devID,'...\n'))
@@ -376,25 +435,26 @@ RSS.dt <- merge(RSS.dt, emissionProb_rasterCell.dt[, .(rasterCell, event_cellID,
     
     if(!all(is.na(antennas_deviceID))){
   
-      #####                Fit and compute HMM model                 ####
+      #####                 Compute HMM model                 ####
       
       if (parameters.method[m,1] == 'cluster'){
-        cat(paste0('    cluster ', clusterdevice[i],'...\n'))
+        cluster = clusterdevice[i]
+        cat(paste0('       cluster ', clusterdevice[i],'...\n'))
         model$parameters$reducedparams$params = ParameterMatrix[clusterdevice[i],]
         model$parameters$transitions=gettransmatrix(model) %*% c(rparams(model), 1) 
       }
       
       if(parameters.method[m,1] == 'All'){
-        cat('       fit and compute HMM model...\n')
-        HMMmodel_output <- compute_HMM(model = model, observedValues = antennas_deviceID, 
-                                       pad_coef = pad_coef, init = TRUE)
-          
-      }else{
-      
-        cat('compute HMM model...\n')
-        HMMmodel_output <- compute_HMMPostLoc(model = model, observedValues = antennas_deviceID, 
-                                     pad_coef = pad_coef)
+        
+        model$parameters$reducedparams$params = as.numeric(ParameterMatrix[i,c(2,3)])
+        model$parameters$transitions=gettransmatrix(model) %*% c(rparams(model), 1) 
+        
       }
+      
+      cat('       compute HMM model...\n')
+      HMMmodel_output <- compute_HMMPostLoc(model = model, observedValues = antennas_deviceID, 
+                                     pad_coef = pad_coef)
+        
       # model_devID <- HMMmodel_output$model_devID
       postLocProb_HMM_deviceID.matrix      <- HMMmodel_output$postLocP 
       postLocJointProb_HMM_deviceID.matrix <- HMMmodel_output$postJointLocP
@@ -415,11 +475,14 @@ RSS.dt <- merge(RSS.dt, emissionProb_rasterCell.dt[, .(rasterCell, event_cellID,
       postLocProb_deviceID.dt <- transform_output$postLocProb
       postLocProb.list[[as.character(devID)]] <- postLocProb_deviceID.dt[
         , c('device', 'time', 'tile', 'event_cellID', 'postLocProb'), with = FALSE]
+      postLocProb.list[[as.character(devID)]][['cluster']]=cluster
       
       postLocJointProb_deviceID.dt <- transform_output$postLocJointProb
       postLocJointProb.list[[as.character(devID)]] <- postLocJointProb_deviceID.dt[
         , time_to := time_from + t_increment][
         , c('device', 'time_from', 'time_to', 'tile_from', 'tile_to', 'event_cellID_from', 'event_cellID_to', 'postLocProb'), with = FALSE]
+      postLocJointProb.list[[as.character(devID)]][['cluster']]=cluster
+      
       
       # fwrite(postLocProb_deviceID.dt[, .(device, time, tile, event_cellID, postLocProb)], 
       #        file.path(path_postLoc, 
@@ -464,6 +527,13 @@ RSS.dt <- merge(RSS.dt, emissionProb_rasterCell.dt[, .(rasterCell, event_cellID,
                      paste0('postLocJointProb_', geolocation_model, '_', 
                             emission_model, '-', geolocation_prior, '_', parameters.method[m,2], '.csv')))
   }
-
+  
+  if(parameters.method[m,1] == 'All'){
+    ParameterMatrix=as.data.table(ParameterMatrix)
+    names(ParameterMatrix)=c('device', 'theta1', 'theta2')
+    fwrite(ParameterMatrix, 
+           file.path(path_postLoc, 
+                     paste0('Parameters_', parameters.method[m,2], '.csv')))
+  }
   
 }

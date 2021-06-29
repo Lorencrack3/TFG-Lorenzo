@@ -1,6 +1,6 @@
 ####  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ####
 ####                           SET PATHS                                    ####
-path_root         <- 'D:/Documentos/Universidad/TFG/MobileNetworkDataSimulationTemplate'
+path_root         <- 'D:/Github/TFG-Lorenzo/MobileNetworkDataSimulationTemplate'
 path_source       <- file.path(path_root, 'code/src')
 path_simConfig    <- file.path(path_root, 'data/simulatorConfig')
 path_events       <- file.path(path_root, 'data/networkEvents')
@@ -46,8 +46,7 @@ sim <- list(simConfig_dir = path_simConfig,
             crs = sf::st_crs(NA))
 
 # cell to draw
-cellID <- 29
-
+cellID <- 48
 
 rst <- sim_get_raster(sim)
 cp  <- sim_get_cellplan(sim)
@@ -80,10 +79,10 @@ map_sig_strength(rst,
 map_best_server(rst = rst,
                 dt = strength,
                 cp = cp,
-                region = region,
+                region = map,
                 cells = cellID,
                 type = "bsm",
-                interactive = FALSE,
+                interactive = TRUE,
                 settings = mobvis_settings(cell_size = 1,
                                            cell_labels = TRUE))
 

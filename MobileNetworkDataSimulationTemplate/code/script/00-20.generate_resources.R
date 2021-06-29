@@ -1,6 +1,6 @@
 ####  ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: ####
 ####                           SET PATHS                                    ####
-path_root      <- 'D:/Documentos/Universidad/TFG/MobileNetworkDataSimulationTemplate'
+path_root      <- 'D:/Github/TFG-Lorenzo/MobileNetworkDataSimulationTemplate'
 path_source    <- file.path(path_root, 'code/src')
 path_simConfig <- file.path(path_root, 'data/simulatorConfig')
 path_events    <- file.path(path_root, 'data/networkEvents')

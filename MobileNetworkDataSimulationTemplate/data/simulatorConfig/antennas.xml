@@ -96,7 +96,7 @@
     <maxconnections>56</maxconnections>
     <power>10</power>
     <attenuationfactor>4.0</attenuationfactor>
-    <type>directional</type>
+    <type>omnidirectional</type>
     <Smin>-85</Smin>
 	  <Qmin>0.3</Qmin>
 	<tilt>15</tilt>
@@ -111,47 +111,6 @@
     <y>4000</y>
 	<z>5</z>
   </antenna>
-  <antenna>
-    <mno_name>MNO1</mno_name>
-    <maxconnections>56</maxconnections>
-    <power>10</power>
-    <attenuationfactor>4.0</attenuationfactor>
-    <type>directional</type>
-    <Smin>-85</Smin>
-	  <Qmin>0.3</Qmin>
-	<tilt>15</tilt>
-	<azim_dB_back>-30</azim_dB_back>
-	<elev_dB_back>-30</elev_dB_back>
-	<beam_h>120</beam_h>
-	<beam_v>75</beam_v>
-	<direction>120</direction>
-    <Smid>-83</Smid>
-    <SSteep>1</SSteep>
-    <x>8000</x>
-    <y>4000</y>
-	<z>5</z>
-  </antenna>
-  <antenna>
-    <mno_name>MNO1</mno_name>
-    <maxconnections>56</maxconnections>
-    <power>10</power>
-    <attenuationfactor>4.0</attenuationfactor>
-    <type>directional</type>
-    <Smin>-85</Smin>
-	  <Qmin>0.3</Qmin>
-	<tilt>15</tilt>
-	<azim_dB_back>-30</azim_dB_back>
-	<elev_dB_back>-30</elev_dB_back>
-	<beam_h>120</beam_h>
-	<beam_v>75</beam_v>
-	<direction>240</direction>
-    <Smid>-83</Smid>
-    <SSteep>1</SSteep>
-    <x>8000</x>
-    <y>4000</y>
-	<z>5</z>
-  </antenna> 
-  
   
   
   
